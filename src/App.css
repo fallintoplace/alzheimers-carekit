@@ -352,7 +352,7 @@ main {
 .stats-row {
   display: grid;
   gap: 14px;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
 }
 
 .dashboard-split {
@@ -421,6 +421,18 @@ main {
   min-height: 100%;
 }
 
+.support-now-panel {
+  align-items: center;
+  display: grid;
+  gap: 18px;
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.support-now-panel p:last-child {
+  color: var(--muted);
+  margin: 8px 0 0;
+}
+
 .handoff-list {
   display: grid;
   gap: 12px;
@@ -455,7 +467,7 @@ main {
 .setup-list {
   display: grid;
   gap: 12px;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
 }
 
 .setup-step {
@@ -533,7 +545,9 @@ main {
 
 .routine-card,
 .contact-card,
-.log-card {
+.log-card,
+.safety-card,
+.support-card {
   align-items: flex-start;
   background: #ffffff;
   border: 1px solid var(--line);
@@ -546,33 +560,79 @@ main {
 
 .routine-card:hover,
 .contact-card:hover,
-.log-card:hover {
+.log-card:hover,
+.safety-card:hover,
+.support-card:hover {
   border-color: #bdd5cf;
 }
 
 .contact-card,
 .log-card,
-.routine-card.compact {
+.routine-card.compact,
+.support-card {
   grid-template-columns: 1fr auto;
 }
 
-.routine-card.done {
+.safety-card {
+  grid-template-columns: auto 1fr auto;
+}
+
+.routine-card.done,
+.safety-card.done,
+.support-card.used {
   background: #eff8f4;
   border-color: #b9ddd2;
 }
 
 .routine-card h3,
 .contact-card h3,
-.log-card h3 {
+.log-card h3,
+.safety-card h3,
+.support-card h3 {
   color: var(--ink);
   margin: 0 0 6px;
 }
 
 .routine-card p,
 .contact-card p,
-.log-card p {
+.log-card p,
+.safety-card p,
+.support-card p {
   color: var(--muted);
   margin: 0;
+}
+
+.support-list {
+  display: grid;
+  gap: 8px;
+  margin: 12px 0 0;
+}
+
+.support-list div {
+  background: var(--surface-soft);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px;
+}
+
+.support-list dt {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 850;
+  margin-bottom: 4px;
+  text-transform: uppercase;
+}
+
+.support-list dd {
+  color: var(--ink);
+  margin: 0;
+}
+
+.card-actions {
+  align-items: flex-end;
+  display: grid;
+  gap: 8px;
+  justify-items: end;
 }
 
 .check-button {
@@ -1139,8 +1199,11 @@ textarea {
   .stats-row,
   .dashboard-split,
   .filter-bar,
+  .support-now-panel,
   .setup-list,
   .setup-step,
+  .safety-card,
+  .support-card,
   .mood-chips,
   .emergency-grid,
   .emergency-contacts div {
@@ -1162,8 +1225,13 @@ textarea {
   .topbar-actions,
   .hero-actions,
   .panel-actions,
+  .card-actions,
   .dialog-actions {
     justify-content: stretch;
+  }
+
+  .card-actions {
+    justify-items: stretch;
   }
 
   .primary-button,

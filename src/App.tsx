@@ -17,6 +17,7 @@ import {
   PhoneCall,
   Printer,
   RotateCcw,
+  HeartPulse,
   ShieldCheck,
   Search,
   Upload,
@@ -28,7 +29,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import type { LucideIcon } from 'lucide-react'
 import './App.css'
 
-type NavKey = 'today' | 'profile' | 'routines' | 'log' | 'emergency'
+type NavKey = 'today' | 'profile' | 'routines' | 'log' | 'safety' | 'emergency'
 type PrintTarget = 'none' | 'emergency' | 'shift'
 type RoutineFilter = 'all' | 'open' | 'done'
 type ToastTone = 'success' | 'info' | 'danger'
@@ -76,6 +77,23 @@ type LogEntry = {
   notes: string
 }
 
+type SafetyItem = {
+  id: string
+  title: string
+  category: string
+  detail: string
+  done: boolean
+}
+
+type SupportCard = {
+  id: string
+  cue: string
+  tryThis: string
+  avoid: string
+  note: string
+  usedToday: boolean
+}
+
 type Backup = {
   version: 1
   exportedAt: string
@@ -83,6 +101,8 @@ type Backup = {
   routines: RoutineItem[]
   contacts: Contact[]
   logEntries: LogEntry[]
+  safetyItems: SafetyItem[]
+  supportCards: SupportCard[]
 }
 
 type NavItem = {
@@ -168,12 +188,65 @@ const defaultLogEntries: LogEntry[] = [
   },
 ]
 
+const defaultSafetyItems: SafetyItem[] = [
+  {
+    id: 'safety-id-card',
+    title: 'Emergency contact card is ready',
+    category: 'Wandering prep',
+    detail: 'Keep a current contact card in the wallet, coat pocket, or go bag.',
+    done: false,
+  },
+  {
+    id: 'safety-walk-route',
+    title: 'Favorite walking routes are written down',
+    category: 'Wandering prep',
+    detail: 'Note familiar places, nearby exits, and who to call first.',
+    done: false,
+  },
+  {
+    id: 'safety-trip-hazards',
+    title: 'Walkways are clear',
+    category: 'Home safety',
+    detail: 'Check cords, loose rugs, clutter, and poorly lit paths.',
+    done: false,
+  },
+  {
+    id: 'safety-quiet-space',
+    title: 'Quiet reset space is prepared',
+    category: 'Comfort',
+    detail: 'Keep comfort items, low noise, and soft lighting ready.',
+    done: false,
+  },
+]
+
+const defaultSupportCards: SupportCard[] = [
+  {
+    id: 'support-looking-for-home',
+    cue: 'Looking for home or asking to leave',
+    tryThis:
+      'Validate the feeling, offer a familiar object, and redirect to a short walk or photo album.',
+    avoid: 'Arguing about where home is or rushing the transition.',
+    note: 'Use two simple choices and a calm voice.',
+    usedToday: false,
+  },
+  {
+    id: 'support-evening-confusion',
+    cue: 'Evening confusion or restlessness',
+    tryThis:
+      'Lower noise, simplify the room, offer water, and start a familiar evening routine.',
+    avoid: 'Crowded rooms, loud television, and too many questions at once.',
+    note: 'Classic jazz and folding towels usually help.',
+    usedToday: false,
+  },
+]
+
 const navItems: NavItem[] = [
   { key: 'today', label: 'Today', icon: Home },
   { key: 'profile', label: 'Care profile', icon: UserRound },
   { key: 'routines', label: 'Routines', icon: ClipboardList },
   { key: 'log', label: 'Care log', icon: FileText },
-  { key: 'emergency', label: 'Emergency', icon: ShieldCheck },
+  { key: 'safety', label: 'Safety', icon: ShieldCheck },
+  { key: 'emergency', label: 'Emergency', icon: HeartHandshake },
 ]
 
 const quickMoodOptions = ['Settled', 'Anxious', 'Confused', 'Cheerful']
@@ -200,6 +273,19 @@ const emptyLogEntry = {
   notes: '',
 }
 
+const emptySafetyItem = {
+  title: '',
+  category: 'Home safety',
+  detail: '',
+}
+
+const emptySupportCard = {
+  cue: '',
+  tryThis: '',
+  avoid: '',
+  note: '',
+}
+
 function createId(prefix: string) {
   if (globalThis.crypto?.randomUUID) {
     return `${prefix}-${globalThis.crypto.randomUUID()}`
@@ -217,6 +303,8 @@ function createBackup(
   routines: RoutineItem[],
   contacts: Contact[],
   logEntries: LogEntry[],
+  safetyItems: SafetyItem[],
+  supportCards: SupportCard[],
 ): Backup {
   return {
     version: 1,
@@ -225,6 +313,8 @@ function createBackup(
     routines,
     contacts,
     logEntries,
+    safetyItems,
+    supportCards,
   }
 }
 
@@ -237,6 +327,8 @@ function loadBackup(): Backup {
         defaultRoutines,
         defaultContacts,
         defaultLogEntries,
+        defaultSafetyItems,
+        defaultSupportCards,
       )
     }
 
@@ -247,6 +339,12 @@ function loadBackup(): Backup {
       Array.isArray(parsed.routines) ? parsed.routines : defaultRoutines,
       Array.isArray(parsed.contacts) ? parsed.contacts : defaultContacts,
       Array.isArray(parsed.logEntries) ? parsed.logEntries : defaultLogEntries,
+      Array.isArray(parsed.safetyItems)
+        ? parsed.safetyItems
+        : defaultSafetyItems,
+      Array.isArray(parsed.supportCards)
+        ? parsed.supportCards
+        : defaultSupportCards,
     )
   } catch {
     return createBackup(
@@ -254,6 +352,8 @@ function loadBackup(): Backup {
       defaultRoutines,
       defaultContacts,
       defaultLogEntries,
+      defaultSafetyItems,
+      defaultSupportCards,
     )
   }
 }
@@ -422,9 +522,13 @@ function App() {
   const [logEntries, setLogEntries] = useState(
     [...initialData.logEntries].sort((a, b) => b.date.localeCompare(a.date)),
   )
+  const [safetyItems, setSafetyItems] = useState(initialData.safetyItems)
+  const [supportCards, setSupportCards] = useState(initialData.supportCards)
   const [routineDraft, setRoutineDraft] = useState(emptyRoutine)
   const [contactDraft, setContactDraft] = useState(emptyContact)
   const [logDraft, setLogDraft] = useState(emptyLogEntry)
+  const [safetyDraft, setSafetyDraft] = useState(emptySafetyItem)
+  const [supportDraft, setSupportDraft] = useState(emptySupportCard)
   const [quickLog, setQuickLog] = useState('')
   const [quickMood, setQuickMood] = useState('Settled')
   const [routineFilter, setRoutineFilter] = useState<RoutineFilter>('all')
@@ -441,8 +545,16 @@ function App() {
   const quickNoteRef = useRef<HTMLTextAreaElement>(null)
 
   const backup = useMemo(
-    () => createBackup(profile, routines, contacts, logEntries),
-    [contacts, logEntries, profile, routines],
+    () =>
+      createBackup(
+        profile,
+        routines,
+        contacts,
+        logEntries,
+        safetyItems,
+        supportCards,
+      ),
+    [contacts, logEntries, profile, routines, safetyItems, supportCards],
   )
 
   const completedRoutines = routines.filter((routine) => routine.done).length
@@ -451,6 +563,10 @@ function App() {
   const upcomingRoutines = openRoutines.slice(0, 3)
   const latestLog = logEntries[0]
   const recentLogEntries = logEntries.slice(0, 5)
+  const completedSafetyItems = safetyItems.filter((item) => item.done).length
+  const openSafetyItems = safetyItems.filter((item) => !item.done)
+  const usedSupportCards = supportCards.filter((card) => card.usedToday).length
+  const highlightedSupportCard = supportCards[0]
   const currentTime = currentSortableTime()
   const dueNowCount = openRoutines.filter(
     (routine) => routine.time <= currentTime,
@@ -520,6 +636,15 @@ function App() {
       complete: routines.length > 0,
       tab: 'routines' as NavKey,
     },
+    {
+      label: 'Safety plan',
+      detail:
+        safetyItems.length > 0
+          ? `${completedSafetyItems}/${safetyItems.length} checks ready`
+          : 'At least one safety check',
+      complete: safetyItems.length > 0,
+      tab: 'safety' as NavKey,
+    },
   ]
   const completedSetupSteps = setupSteps.filter((step) => step.complete).length
   const handoffSummary = [
@@ -531,6 +656,13 @@ function App() {
     latestLog
       ? `Latest log: ${latestLog.date}; mood ${latestLog.mood}; sleep ${latestLog.sleep}; appetite ${latestLog.appetite}; ${latestLog.notes}`
       : 'Latest log: no entries yet',
+    `Safety checks: ${completedSafetyItems}/${safetyItems.length} ready`,
+    openSafetyItems[0]
+      ? `Safety follow-up: ${openSafetyItems[0].title}`
+      : 'Safety follow-up: none open',
+    highlightedSupportCard
+      ? `Support cue: ${highlightedSupportCard.cue}; try ${highlightedSupportCard.tryThis}`
+      : 'Support cue: none saved',
     `Comfort items: ${profile.comfortItems || 'not set'}`,
     `Avoid: ${profile.avoid || 'not set'}`,
     primaryContact
@@ -583,6 +715,24 @@ function App() {
     event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
   ) {
     setLogDraft((current) => ({
+      ...current,
+      [event.target.name]: event.target.value,
+    }))
+  }
+
+  function updateSafetyDraft(
+    event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+  ) {
+    setSafetyDraft((current) => ({
+      ...current,
+      [event.target.name]: event.target.value,
+    }))
+  }
+
+  function updateSupportDraft(
+    event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+  ) {
+    setSupportDraft((current) => ({
       ...current,
       [event.target.name]: event.target.value,
     }))
@@ -735,6 +885,91 @@ function App() {
     showToast('Log entry removed', 'The note was removed from history.', 'danger')
   }
 
+  function addSafetyItem(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    const title = safetyDraft.title.trim()
+    if (!title) {
+      return
+    }
+
+    setSafetyItems((current) => [
+      ...current,
+      {
+        id: createId('safety'),
+        title,
+        category: safetyDraft.category.trim() || 'Safety',
+        detail: safetyDraft.detail.trim(),
+        done: false,
+      },
+    ])
+    setSafetyDraft(emptySafetyItem)
+    showToast('Safety check added', `${title} is in the safety plan.`, 'success')
+  }
+
+  function toggleSafetyItem(id: string) {
+    setSafetyItems((current) =>
+      current.map((item) =>
+        item.id === id ? { ...item, done: !item.done } : item,
+      ),
+    )
+  }
+
+  function removeSafetyItem(id: string) {
+    const removed = safetyItems.find((item) => item.id === id)
+    setSafetyItems((current) => current.filter((item) => item.id !== id))
+    showToast(
+      'Safety check removed',
+      `${removed?.title ?? 'Safety check'} was removed.`,
+      'danger',
+    )
+  }
+
+  function resetSafetyItems() {
+    setSafetyItems((current) => current.map((item) => ({ ...item, done: false })))
+    showToast('Safety checks reset', 'All safety checks are open again.', 'info')
+  }
+
+  function addSupportCard(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    const cue = supportDraft.cue.trim()
+    const tryThis = supportDraft.tryThis.trim()
+    if (!cue || !tryThis) {
+      return
+    }
+
+    setSupportCards((current) => [
+      ...current,
+      {
+        id: createId('support'),
+        cue,
+        tryThis,
+        avoid: supportDraft.avoid.trim(),
+        note: supportDraft.note.trim(),
+        usedToday: false,
+      },
+    ])
+    setSupportDraft(emptySupportCard)
+    showToast('Support card added', `${cue} is ready for handoff.`, 'success')
+  }
+
+  function toggleSupportCard(id: string) {
+    setSupportCards((current) =>
+      current.map((card) =>
+        card.id === id ? { ...card, usedToday: !card.usedToday } : card,
+      ),
+    )
+  }
+
+  function removeSupportCard(id: string) {
+    const removed = supportCards.find((card) => card.id === id)
+    setSupportCards((current) => current.filter((card) => card.id !== id))
+    showToast(
+      'Support card removed',
+      `${removed?.cue ?? 'Support card'} was removed.`,
+      'danger',
+    )
+  }
+
   function exportBackup() {
     downloadFile(
       'alzheimers-carekit-backup.json',
@@ -768,6 +1003,16 @@ function App() {
         (Array.isArray(imported.logEntries) ? imported.logEntries : []).sort(
           (a, b) => b.date.localeCompare(a.date),
         ),
+      )
+      setSafetyItems(
+        Array.isArray(imported.safetyItems)
+          ? imported.safetyItems
+          : defaultSafetyItems,
+      )
+      setSupportCards(
+        Array.isArray(imported.supportCards)
+          ? imported.supportCards
+          : defaultSupportCards,
       )
       showToast('Backup imported', 'The local care workspace was updated.', 'success')
     } catch {
@@ -854,6 +1099,7 @@ function App() {
                     ? `${nextRoutine.time} - ${nextRoutine.title}`
                     : 'No open routines right now'}
                 </p>
+                <p>{openSafetyItems.length} safety checks open</p>
                 {primaryContact && (
                   <a className="sidebar-call" href={`tel:${primaryContact.phone}`}>
                     <PhoneCall aria-hidden="true" size={16} />
@@ -870,7 +1116,8 @@ function App() {
                   <h1>Care command center for {profile.preferredName || 'today'}</h1>
                   <p className="topbar-copy">
                     Saved locally at {lastSavedAt}. {openRoutines.length} open
-                    routines, {contacts.length} contacts, {logEntries.length} notes.
+                    routines, {openSafetyItems.length} safety checks,{' '}
+                    {logEntries.length} notes.
                   </p>
                 </div>
                 <div className="topbar-actions">
@@ -915,6 +1162,7 @@ function App() {
                 <div className="status-badges" aria-label="Shift status">
                   <span>{dueNowCount} due now</span>
                   <span>{openRoutines.length} open</span>
+                  <span>{openSafetyItems.length} safety open</span>
                   <span>{lastSavedAt ? `Saved ${lastSavedAt}` : 'Saved locally'}</span>
                 </div>
                 {nextRoutine ? (
@@ -994,6 +1242,11 @@ function App() {
               />
               <StatBlock
                 icon={ShieldCheck}
+                label="Safety"
+                value={`${completedSafetyItems}/${safetyItems.length}`}
+              />
+              <StatBlock
+                icon={HeartPulse}
                 label="Setup"
                 value={`${completedSetupSteps}/${setupSteps.length}`}
               />
@@ -1071,6 +1324,22 @@ function App() {
                     <dd>{latestLog ? latestLog.notes : 'No log entries yet'}</dd>
                   </div>
                   <div>
+                    <dt>Safety follow-up</dt>
+                    <dd>
+                      {openSafetyItems[0]
+                        ? openSafetyItems[0].title
+                        : 'No open safety checks'}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>Support cue</dt>
+                    <dd>
+                      {highlightedSupportCard
+                        ? highlightedSupportCard.cue
+                        : 'No support cards yet'}
+                    </dd>
+                  </div>
+                  <div>
                     <dt>Primary contact</dt>
                     <dd>
                       {contacts[0]
@@ -1114,6 +1383,30 @@ function App() {
                 </button>
               </form>
             </div>
+
+            <section className="work-panel support-now-panel">
+              <div>
+                <p className="eyebrow">Support now</p>
+                <h2>
+                  {highlightedSupportCard
+                    ? highlightedSupportCard.cue
+                    : 'Build a calming response plan'}
+                </h2>
+                <p>
+                  {highlightedSupportCard
+                    ? highlightedSupportCard.tryThis
+                    : 'Save practical cues, what to try, and what to avoid for harder moments.'}
+                </p>
+              </div>
+              <button
+                className="secondary-button"
+                type="button"
+                onClick={() => setActiveTab('safety')}
+              >
+                <ShieldCheck aria-hidden="true" size={18} />
+                Open safety plan
+              </button>
+            </section>
 
             <div className="work-panel">
               <div className="panel-header">
@@ -1547,6 +1840,267 @@ function App() {
           </section>
         )}
 
+        {activeTab === 'safety' && (
+          <section className="section-grid">
+            <div className="stats-row">
+              <StatBlock
+                icon={ShieldCheck}
+                label="Safety ready"
+                value={`${completedSafetyItems}/${safetyItems.length}`}
+              />
+              <StatBlock
+                icon={AlertTriangle}
+                label="Open checks"
+                value={String(openSafetyItems.length)}
+              />
+              <StatBlock
+                icon={HeartPulse}
+                label="Support cards"
+                value={String(supportCards.length)}
+              />
+              <StatBlock
+                icon={Check}
+                label="Tried today"
+                value={String(usedSupportCards)}
+              />
+            </div>
+
+            <section className="notice-panel">
+              <AlertTriangle aria-hidden="true" size={22} />
+              <div>
+                <h2>Safety and support planning</h2>
+                <p>
+                  Use this space to keep practical checks and calming responses
+                  visible for the next caregiver. It is not monitoring,
+                  medical advice, or emergency guidance.
+                </p>
+              </div>
+            </section>
+
+            <section className="section-grid two-column">
+              <form className="work-panel form-panel" onSubmit={addSafetyItem}>
+                <div className="panel-header">
+                  <div>
+                    <p className="eyebrow">Safety plan</p>
+                    <h2>Add preparedness check</h2>
+                  </div>
+                </div>
+                <label>
+                  Title
+                  <input
+                    name="title"
+                    value={safetyDraft.title}
+                    onChange={updateSafetyDraft}
+                    placeholder="Favorite walking route is written down"
+                  />
+                </label>
+                <label>
+                  Category
+                  <input
+                    name="category"
+                    value={safetyDraft.category}
+                    onChange={updateSafetyDraft}
+                    placeholder="Wandering prep"
+                  />
+                </label>
+                <label>
+                  Details
+                  <textarea
+                    name="detail"
+                    value={safetyDraft.detail}
+                    onChange={updateSafetyDraft}
+                    placeholder="What another caregiver should check or know."
+                  />
+                </label>
+                <button className="primary-button" type="submit">
+                  <Plus aria-hidden="true" size={18} />
+                  Add safety check
+                </button>
+              </form>
+
+              <div className="work-panel">
+                <div className="panel-header">
+                  <div>
+                    <p className="eyebrow">Preparedness</p>
+                    <h2>{completedSafetyItems} ready</h2>
+                  </div>
+                  <ConfirmAction
+                    title="Reset safety checks?"
+                    description="This reopens every safety preparedness check."
+                    confirmLabel="Reset checks"
+                    tone="neutral"
+                    onConfirm={resetSafetyItems}
+                  >
+                    <button className="secondary-button" type="button">
+                      <RotateCcw aria-hidden="true" size={18} />
+                      Reset
+                    </button>
+                  </ConfirmAction>
+                </div>
+                <div className="item-list">
+                  {safetyItems.map((item) => (
+                    <article
+                      className={item.done ? 'safety-card done' : 'safety-card'}
+                      key={item.id}
+                    >
+                      <button
+                        className="check-button"
+                        type="button"
+                        onClick={() => toggleSafetyItem(item.id)}
+                        aria-label={`Mark ${item.title} ${
+                          item.done ? 'not ready' : 'ready'
+                        }`}
+                      >
+                        {item.done && <Check aria-hidden="true" size={18} />}
+                      </button>
+                      <div>
+                        <span className="time-pill">{item.category}</span>
+                        <h3>{item.title}</h3>
+                        {item.detail && <p>{item.detail}</p>}
+                      </div>
+                      <ConfirmAction
+                        title={`Remove ${item.title}?`}
+                        description="This removes the safety check from this device."
+                        confirmLabel="Remove check"
+                        onConfirm={() => removeSafetyItem(item.id)}
+                      >
+                        <button
+                          className="icon-button quiet danger-icon"
+                          type="button"
+                          aria-label={`Remove ${item.title}`}
+                        >
+                          <X aria-hidden="true" size={18} />
+                        </button>
+                      </ConfirmAction>
+                    </article>
+                  ))}
+                </div>
+              </div>
+            </section>
+
+            <section className="section-grid two-column">
+              <form className="work-panel form-panel" onSubmit={addSupportCard}>
+                <div className="panel-header">
+                  <div>
+                    <p className="eyebrow">Support card</p>
+                    <h2>Add calming response</h2>
+                  </div>
+                </div>
+                <label>
+                  Cue
+                  <input
+                    name="cue"
+                    value={supportDraft.cue}
+                    onChange={updateSupportDraft}
+                    placeholder="Looking for home or asking to leave"
+                  />
+                </label>
+                <label>
+                  Try first
+                  <textarea
+                    name="tryThis"
+                    value={supportDraft.tryThis}
+                    onChange={updateSupportDraft}
+                    placeholder="Validate the feeling, offer a familiar item, then redirect."
+                  />
+                </label>
+                <label>
+                  Avoid
+                  <textarea
+                    name="avoid"
+                    value={supportDraft.avoid}
+                    onChange={updateSupportDraft}
+                    placeholder="Arguments, rushing, noisy rooms."
+                  />
+                </label>
+                <label>
+                  Handoff note
+                  <textarea
+                    name="note"
+                    value={supportDraft.note}
+                    onChange={updateSupportDraft}
+                    placeholder="Anything that worked recently."
+                  />
+                </label>
+                <button className="primary-button" type="submit">
+                  <Plus aria-hidden="true" size={18} />
+                  Add support card
+                </button>
+              </form>
+
+              <div className="work-panel">
+                <div className="panel-header">
+                  <div>
+                    <p className="eyebrow">Response library</p>
+                    <h2>{supportCards.length} cards</h2>
+                  </div>
+                </div>
+                <div className="item-list">
+                  {supportCards.map((card) => (
+                    <article
+                      className={
+                        card.usedToday ? 'support-card used' : 'support-card'
+                      }
+                      key={card.id}
+                    >
+                      <div>
+                        <h3>{card.cue}</h3>
+                        <dl className="support-list">
+                          <div>
+                            <dt>Try first</dt>
+                            <dd>{card.tryThis}</dd>
+                          </div>
+                          {card.avoid && (
+                            <div>
+                              <dt>Avoid</dt>
+                              <dd>{card.avoid}</dd>
+                            </div>
+                          )}
+                          {card.note && (
+                            <div>
+                              <dt>Handoff note</dt>
+                              <dd>{card.note}</dd>
+                            </div>
+                          )}
+                        </dl>
+                      </div>
+                      <div className="card-actions">
+                        <button
+                          className={
+                            card.usedToday
+                              ? 'primary-button compact-button'
+                              : 'secondary-button compact-button'
+                          }
+                          type="button"
+                          aria-pressed={card.usedToday}
+                          onClick={() => toggleSupportCard(card.id)}
+                        >
+                          <Check aria-hidden="true" size={16} />
+                          Tried today
+                        </button>
+                        <ConfirmAction
+                          title={`Remove ${card.cue}?`}
+                          description="This removes the support card from this device."
+                          confirmLabel="Remove card"
+                          onConfirm={() => removeSupportCard(card.id)}
+                        >
+                          <button
+                            className="icon-button quiet danger-icon"
+                            type="button"
+                            aria-label={`Remove ${card.cue}`}
+                          >
+                            <X aria-hidden="true" size={18} />
+                          </button>
+                        </ConfirmAction>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              </div>
+            </section>
+          </section>
+        )}
+
         {activeTab === 'emergency' && (
           <section className="section-grid">
             <div className="print-card">
@@ -1577,6 +2131,22 @@ function App() {
                 <div>
                   <strong>Things to avoid</strong>
                   <p>{profile.avoid}</p>
+                </div>
+                <div>
+                  <strong>Safety follow-up</strong>
+                  <p>
+                    {openSafetyItems[0]
+                      ? openSafetyItems[0].title
+                      : 'No open safety checks'}
+                  </p>
+                </div>
+                <div>
+                  <strong>Support cue</strong>
+                  <p>
+                    {highlightedSupportCard
+                      ? highlightedSupportCard.cue
+                      : 'No support cards saved'}
+                  </p>
                 </div>
                 <div>
                   <strong>Care notes</strong>
@@ -1636,6 +2206,14 @@ function App() {
                 : 'Not set'}
             </p>
           </div>
+          <div>
+            <strong>Safety checks</strong>
+            <p>{completedSafetyItems} of {safetyItems.length} ready</p>
+          </div>
+          <div>
+            <strong>Support cards</strong>
+            <p>{usedSupportCards} tried today</p>
+          </div>
         </section>
 
         <section className="shift-print-section">
@@ -1686,6 +2264,54 @@ function App() {
                   <td>{routine.title}</td>
                   <td>{routine.done ? 'Done' : 'Open'}</td>
                   <td>{routine.notes || routine.category}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </section>
+
+        <section className="shift-print-section">
+          <h3>Safety checks</h3>
+          <table className="print-table">
+            <thead>
+              <tr>
+                <th>Category</th>
+                <th>Check</th>
+                <th>Status</th>
+                <th>Details</th>
+              </tr>
+            </thead>
+            <tbody>
+              {safetyItems.map((item) => (
+                <tr key={item.id}>
+                  <td>{item.category}</td>
+                  <td>{item.title}</td>
+                  <td>{item.done ? 'Ready' : 'Open'}</td>
+                  <td>{item.detail || 'Not set'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </section>
+
+        <section className="shift-print-section">
+          <h3>Support cards</h3>
+          <table className="print-table">
+            <thead>
+              <tr>
+                <th>Cue</th>
+                <th>Try first</th>
+                <th>Avoid</th>
+                <th>Note</th>
+              </tr>
+            </thead>
+            <tbody>
+              {supportCards.map((card) => (
+                <tr key={card.id}>
+                  <td>{card.cue}</td>
+                  <td>{card.tryThis}</td>
+                  <td>{card.avoid || 'Not set'}</td>
+                  <td>{card.note || (card.usedToday ? 'Tried today' : 'Not set')}</td>
                 </tr>
               ))}
             </tbody>
