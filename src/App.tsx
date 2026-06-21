@@ -108,6 +108,7 @@ type Backup = {
 type NavItem = {
   key: NavKey
   label: string
+  shortLabel: string
   icon: LucideIcon
 }
 
@@ -241,12 +242,17 @@ const defaultSupportCards: SupportCard[] = [
 ]
 
 const navItems: NavItem[] = [
-  { key: 'today', label: 'Today', icon: Home },
-  { key: 'profile', label: 'Care profile', icon: UserRound },
-  { key: 'routines', label: 'Routines', icon: ClipboardList },
-  { key: 'log', label: 'Care log', icon: FileText },
-  { key: 'safety', label: 'Safety', icon: ShieldCheck },
-  { key: 'emergency', label: 'Emergency', icon: HeartHandshake },
+  { key: 'today', label: 'Today', shortLabel: 'Today', icon: Home },
+  { key: 'profile', label: 'Care profile', shortLabel: 'Profile', icon: UserRound },
+  { key: 'routines', label: 'Routines', shortLabel: 'Routines', icon: ClipboardList },
+  { key: 'log', label: 'Care log', shortLabel: 'Log', icon: FileText },
+  { key: 'safety', label: 'Safety', shortLabel: 'Safety', icon: ShieldCheck },
+  {
+    key: 'emergency',
+    label: 'Emergency',
+    shortLabel: 'Urgent',
+    icon: HeartHandshake,
+  },
 ]
 
 const quickMoodOptions = ['Settled', 'Anxious', 'Confused', 'Cheerful']
@@ -1085,7 +1091,8 @@ function App() {
                       aria-label={item.label}
                     >
                       <Icon aria-hidden="true" size={18} />
-                      <span>{item.label}</span>
+                      <span className="tab-label-full">{item.label}</span>
+                      <span className="tab-label-short">{item.shortLabel}</span>
                     </Tabs.Trigger>
                   )
                 })}

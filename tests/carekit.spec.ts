@@ -76,3 +76,26 @@ test('supports the core caregiver workflow', async ({ page }) => {
   ).toBeVisible()
   expect(errors).toEqual([])
 })
+
+test('keeps primary navigation reachable on mobile', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto('/')
+
+  const nav = page.getByRole('tablist', { name: 'CareKit sections' })
+  await expect(nav).toBeVisible()
+
+  const navBox = await nav.boundingBox()
+  expect(navBox).not.toBeNull()
+  expect(navBox!.y).toBeGreaterThan(740)
+  expect(navBox!.y + navBox!.height).toBeLessThanOrEqual(844)
+
+  await page.getByRole('tab', { name: 'Safety', exact: true }).click()
+  await expect(page.getByRole('heading', { name: 'Safety and support planning' })).toBeVisible()
+  await page.getByRole('tab', { name: 'Emergency', exact: true }).click()
+  await expect(page.locator('#main-content').getByText('Emergency card')).toBeVisible()
+
+  const overflow = await page.evaluate(
+    () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+  )
+  expect(overflow).toBeLessThanOrEqual(1)
+})
