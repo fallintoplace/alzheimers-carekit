@@ -11,6 +11,7 @@ The app is designed for families and small care teams that need a simple place t
 - Today dashboard with routine progress and the next care item
 - Care setup checklist for profile, comfort plan, contacts, and routines
 - Shift handoff brief with one-click copy
+- Printable shift packet with routines, recent notes, contacts, and care profile
 - Mood-tagged quick care notes from the dashboard
 - Person-centered care profile with comfort items, calming activities, and notes
 - Routine checklist with add, reset, complete, remove, search, and filter actions
@@ -18,7 +19,7 @@ The app is designed for families and small care teams that need a simple place t
 - Daily care log with mood, sleep, appetite, notes, search, and CSV export
 - JSON backup import/export
 - Printable emergency card
-- Large touch targets, high contrast, and simple navigation
+- Large touch targets, high contrast, skip navigation, and simple navigation
 
 ## Privacy model
 

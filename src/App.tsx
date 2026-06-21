@@ -25,6 +25,7 @@ import type { LucideIcon } from 'lucide-react'
 import './App.css'
 
 type NavKey = 'today' | 'profile' | 'routines' | 'log' | 'emergency'
+type PrintTarget = 'none' | 'emergency' | 'shift'
 type RoutineFilter = 'all' | 'open' | 'done'
 
 type CareProfile = {
@@ -286,6 +287,13 @@ function timeLabel(date: Date) {
   }).format(date)
 }
 
+function dateTimeLabel(date: Date) {
+  return new Intl.DateTimeFormat(undefined, {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  }).format(date)
+}
+
 function currentSortableTime() {
   return new Intl.DateTimeFormat('en-GB', {
     hour: '2-digit',
@@ -333,6 +341,7 @@ function App() {
   const [logQuery, setLogQuery] = useState('')
   const [importMessage, setImportMessage] = useState('')
   const [copyMessage, setCopyMessage] = useState('')
+  const [printTarget, setPrintTarget] = useState<PrintTarget>('none')
   const fileInputRef = useRef<HTMLInputElement>(null)
   const quickNoteRef = useRef<HTMLTextAreaElement>(null)
 
@@ -346,6 +355,7 @@ function App() {
   const nextRoutine = openRoutines[0]
   const upcomingRoutines = openRoutines.slice(0, 3)
   const latestLog = logEntries[0]
+  const recentLogEntries = logEntries.slice(0, 5)
   const currentTime = currentSortableTime()
   const dueNowCount = openRoutines.filter(
     (routine) => routine.time <= currentTime,
@@ -363,6 +373,7 @@ function App() {
     '--progress-degrees': `${progress * 3.6}deg`,
   } as CSSProperties
   const lastSavedAt = timeLabel(new Date(backup.exportedAt))
+  const generatedAtLabel = dateTimeLabel(new Date(backup.exportedAt))
   const filteredRoutines = routines.filter((routine) => {
     const matchesFilter =
       routineFilter === 'all' ||
@@ -379,6 +390,7 @@ function App() {
     ),
   )
   const primaryContact = contacts[0]
+  const statusMessage = copyMessage || importMessage
   const setupSteps = [
     {
       label: 'Profile basics',
@@ -647,22 +659,48 @@ function App() {
     }
   }
 
+  function triggerPrint(target: Exclude<PrintTarget, 'none'>) {
+    setPrintTarget(target)
+    window.setTimeout(() => {
+      window.print()
+      window.setTimeout(() => setPrintTarget('none'), 300)
+    }, 50)
+  }
+
+  function printShiftPacket() {
+    triggerPrint('shift')
+  }
+
   function printEmergencyCard() {
     setActiveTab('emergency')
-    window.setTimeout(() => window.print(), 50)
+    triggerPrint('emergency')
   }
 
   return (
-    <div className="app-shell">
+    <div className={`app-shell print-${printTarget}`}>
+      <a className="skip-link" href="#main-content">
+        Skip to main content
+      </a>
       <header className="topbar">
         <div>
           <p className="eyebrow">Alzheimer's CareKit</p>
           <h1>Care dashboard for {profile.preferredName || 'today'}</h1>
-          {(importMessage || copyMessage) && (
-            <p className="status-line">{copyMessage || importMessage}</p>
+          {statusMessage && (
+            <p className="status-line" role="status" aria-live="polite">
+              {statusMessage}
+            </p>
           )}
         </div>
         <div className="topbar-actions">
+          <button
+            className="icon-button"
+            type="button"
+            onClick={printShiftPacket}
+            title="Print shift packet"
+            aria-label="Print shift packet"
+          >
+            <FileText aria-hidden="true" size={20} />
+          </button>
           <button
             className="icon-button"
             type="button"
@@ -708,6 +746,7 @@ function App() {
               key={item.key}
               className={item.key === activeTab ? 'tab active' : 'tab'}
               type="button"
+              aria-current={item.key === activeTab ? 'page' : undefined}
               onClick={() => setActiveTab(item.key)}
             >
               <Icon aria-hidden="true" size={18} />
@@ -717,7 +756,7 @@ function App() {
         })}
       </nav>
 
-      <main>
+      <main id="main-content" tabIndex={-1}>
         {activeTab === 'today' && (
           <section className="section-grid">
             <div className="intro-panel">
@@ -850,14 +889,24 @@ function App() {
                     <p className="eyebrow">Shift handoff</p>
                     <h2>Brief</h2>
                   </div>
-                  <button
-                    className="secondary-button"
-                    type="button"
-                    onClick={copyHandoffSummary}
-                  >
-                    <Copy aria-hidden="true" size={18} />
-                    Copy
-                  </button>
+                  <div className="panel-actions">
+                    <button
+                      className="secondary-button"
+                      type="button"
+                      onClick={copyHandoffSummary}
+                    >
+                      <Copy aria-hidden="true" size={18} />
+                      Copy
+                    </button>
+                    <button
+                      className="secondary-button"
+                      type="button"
+                      onClick={printShiftPacket}
+                    >
+                      <Printer aria-hidden="true" size={18} />
+                      Print
+                    </button>
+                  </div>
                 </div>
                 <dl className="handoff-list">
                   <div>
@@ -1034,24 +1083,28 @@ function App() {
               </div>
               <form className="inline-form" onSubmit={addContact}>
                 <input
+                  aria-label="Contact name"
                   name="name"
                   placeholder="Name"
                   value={contactDraft.name}
                   onChange={updateContactDraft}
                 />
                 <input
+                  aria-label="Contact relation"
                   name="relation"
                   placeholder="Relation"
                   value={contactDraft.relation}
                   onChange={updateContactDraft}
                 />
                 <input
+                  aria-label="Contact phone"
                   name="phone"
                   placeholder="Phone"
                   value={contactDraft.phone}
                   onChange={updateContactDraft}
                 />
                 <textarea
+                  aria-label="Contact notes"
                   name="notes"
                   placeholder="Notes"
                   value={contactDraft.notes}
@@ -1369,6 +1422,158 @@ function App() {
           </section>
         )}
       </main>
+      <section className="print-only shift-packet" aria-hidden={printTarget !== 'shift'}>
+        <header className="shift-print-header">
+          <div>
+            <p>Alzheimer's CareKit</p>
+            <h2>Shift packet for {profile.preferredName || 'care recipient'}</h2>
+          </div>
+          <div>
+            <strong>Generated</strong>
+            <span>{generatedAtLabel}</span>
+          </div>
+        </header>
+
+        <section className="shift-print-section summary-grid">
+          <div>
+            <strong>Routine progress</strong>
+            <p>{completedRoutines} of {routines.length} complete</p>
+          </div>
+          <div>
+            <strong>Next routine</strong>
+            <p>
+              {nextRoutine
+                ? `${nextRoutine.time} - ${nextRoutine.title}`
+                : 'No open routines'}
+            </p>
+          </div>
+          <div>
+            <strong>Due now</strong>
+            <p>{dueNowCount} open items</p>
+          </div>
+          <div>
+            <strong>Primary contact</strong>
+            <p>
+              {primaryContact
+                ? `${primaryContact.name}, ${primaryContact.phone}`
+                : 'Not set'}
+            </p>
+          </div>
+        </section>
+
+        <section className="shift-print-section">
+          <h3>Person-centered care</h3>
+          <dl className="print-detail-list">
+            <div>
+              <dt>Home base</dt>
+              <dd>{profile.homeBase || 'Not set'}</dd>
+            </div>
+            <div>
+              <dt>Primary language</dt>
+              <dd>{profile.language || 'Not set'}</dd>
+            </div>
+            <div>
+              <dt>Comfort items</dt>
+              <dd>{profile.comfortItems || 'Not set'}</dd>
+            </div>
+            <div>
+              <dt>Calming activities</dt>
+              <dd>{profile.calmingActivities || 'Not set'}</dd>
+            </div>
+            <div>
+              <dt>Things to avoid</dt>
+              <dd>{profile.avoid || 'Not set'}</dd>
+            </div>
+            <div>
+              <dt>Notes</dt>
+              <dd>{profile.notes || 'Not set'}</dd>
+            </div>
+          </dl>
+        </section>
+
+        <section className="shift-print-section">
+          <h3>Today's routines</h3>
+          <table className="print-table">
+            <thead>
+              <tr>
+                <th>Time</th>
+                <th>Routine</th>
+                <th>Status</th>
+                <th>Notes</th>
+              </tr>
+            </thead>
+            <tbody>
+              {routines.map((routine) => (
+                <tr key={routine.id}>
+                  <td>{routine.time}</td>
+                  <td>{routine.title}</td>
+                  <td>{routine.done ? 'Done' : 'Open'}</td>
+                  <td>{routine.notes || routine.category}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </section>
+
+        <section className="shift-print-section">
+          <h3>Recent care log</h3>
+          {recentLogEntries.length > 0 ? (
+            <table className="print-table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Mood</th>
+                  <th>Sleep</th>
+                  <th>Appetite</th>
+                  <th>Notes</th>
+                </tr>
+              </thead>
+              <tbody>
+                {recentLogEntries.map((entry) => (
+                  <tr key={entry.id}>
+                    <td>{entry.date}</td>
+                    <td>{entry.mood}</td>
+                    <td>{entry.sleep}</td>
+                    <td>{entry.appetite}</td>
+                    <td>{entry.notes}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : (
+            <p>No care log entries yet.</p>
+          )}
+        </section>
+
+        <section className="shift-print-section">
+          <h3>Contacts</h3>
+          <table className="print-table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Relation</th>
+                <th>Phone</th>
+                <th>Notes</th>
+              </tr>
+            </thead>
+            <tbody>
+              {contacts.map((contact) => (
+                <tr key={contact.id}>
+                  <td>{contact.name}</td>
+                  <td>{contact.relation}</td>
+                  <td>{contact.phone}</td>
+                  <td>{contact.notes}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </section>
+
+        <p className="print-safety-note">
+          Caregiver organization only. Not medical advice, diagnosis, emergency
+          guidance, or treatment recommendation.
+        </p>
+      </section>
     </div>
   )
 }
