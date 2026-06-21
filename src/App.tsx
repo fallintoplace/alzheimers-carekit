@@ -1,5 +1,4 @@
 import {
-  Activity,
   AlertTriangle,
   CalendarDays,
   Check,
@@ -11,6 +10,7 @@ import {
   HeartHandshake,
   Home,
   Plus,
+  PhoneCall,
   Printer,
   RotateCcw,
   ShieldCheck,
@@ -164,6 +164,8 @@ const navItems: NavItem[] = [
   { key: 'emergency', label: 'Emergency', icon: ShieldCheck },
 ]
 
+const quickMoodOptions = ['Settled', 'Anxious', 'Confused', 'Cheerful']
+
 const emptyRoutine = {
   title: '',
   time: '09:00',
@@ -277,6 +279,21 @@ function includesText(value: string, query: string) {
   return value.toLowerCase().includes(query.trim().toLowerCase())
 }
 
+function timeLabel(date: Date) {
+  return new Intl.DateTimeFormat(undefined, {
+    hour: 'numeric',
+    minute: '2-digit',
+  }).format(date)
+}
+
+function currentSortableTime() {
+  return new Intl.DateTimeFormat('en-GB', {
+    hour: '2-digit',
+    hour12: false,
+    minute: '2-digit',
+  }).format(new Date())
+}
+
 function StatBlock({
   label,
   value,
@@ -310,12 +327,14 @@ function App() {
   const [contactDraft, setContactDraft] = useState(emptyContact)
   const [logDraft, setLogDraft] = useState(emptyLogEntry)
   const [quickLog, setQuickLog] = useState('')
+  const [quickMood, setQuickMood] = useState('Settled')
   const [routineFilter, setRoutineFilter] = useState<RoutineFilter>('all')
   const [routineQuery, setRoutineQuery] = useState('')
   const [logQuery, setLogQuery] = useState('')
   const [importMessage, setImportMessage] = useState('')
   const [copyMessage, setCopyMessage] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const quickNoteRef = useRef<HTMLTextAreaElement>(null)
 
   const backup = useMemo(
     () => createBackup(profile, routines, contacts, logEntries),
@@ -327,6 +346,10 @@ function App() {
   const nextRoutine = openRoutines[0]
   const upcomingRoutines = openRoutines.slice(0, 3)
   const latestLog = logEntries[0]
+  const currentTime = currentSortableTime()
+  const dueNowCount = openRoutines.filter(
+    (routine) => routine.time <= currentTime,
+  ).length
   const todayLabel = new Intl.DateTimeFormat(undefined, {
     weekday: 'long',
     month: 'short',
@@ -339,6 +362,7 @@ function App() {
   const progressStyle = {
     '--progress-degrees': `${progress * 3.6}deg`,
   } as CSSProperties
+  const lastSavedAt = timeLabel(new Date(backup.exportedAt))
   const filteredRoutines = routines.filter((routine) => {
     const matchesFilter =
       routineFilter === 'all' ||
@@ -355,6 +379,43 @@ function App() {
     ),
   )
   const primaryContact = contacts[0]
+  const setupSteps = [
+    {
+      label: 'Profile basics',
+      detail:
+        profile.preferredName && profile.homeBase
+          ? profile.homeBase
+          : 'Name and home base',
+      complete: Boolean(profile.preferredName && profile.homeBase),
+      tab: 'profile' as NavKey,
+    },
+    {
+      label: 'Comfort plan',
+      detail:
+        profile.comfortItems && profile.calmingActivities
+          ? profile.comfortItems
+          : 'Comfort items and calming activities',
+      complete: Boolean(profile.comfortItems && profile.calmingActivities),
+      tab: 'profile' as NavKey,
+    },
+    {
+      label: 'Care circle',
+      detail:
+        contacts.length > 0 ? `${contacts.length} contacts` : 'At least one contact',
+      complete: contacts.length > 0,
+      tab: 'profile' as NavKey,
+    },
+    {
+      label: 'Daily routine',
+      detail:
+        routines.length > 0
+          ? `${routines.length} routine items`
+          : 'At least one routine',
+      complete: routines.length > 0,
+      tab: 'routines' as NavKey,
+    },
+  ]
+  const completedSetupSteps = setupSteps.filter((step) => step.complete).length
   const handoffSummary = [
     `Care handoff for ${profile.preferredName || 'today'}`,
     `Progress: ${completedRoutines}/${routines.length} routines complete`,
@@ -516,7 +577,7 @@ function App() {
       {
         id: createId('log'),
         date: new Date().toISOString().slice(0, 10),
-        mood: 'Quick note',
+        mood: quickMood,
         sleep: 'Not recorded',
         appetite: 'Not recorded',
         notes: quickLog.trim(),
@@ -524,6 +585,10 @@ function App() {
       ...current,
     ])
     setQuickLog('')
+  }
+
+  function focusQuickNote() {
+    quickNoteRef.current?.focus()
   }
 
   function removeLogEntry(id: string) {
@@ -659,6 +724,11 @@ function App() {
               <div>
                 <p className="eyebrow">{todayLabel}</p>
                 <h2>Next up</h2>
+                <div className="status-badges" aria-label="Shift status">
+                  <span>{dueNowCount} due now</span>
+                  <span>{openRoutines.length} open</span>
+                  <span>{lastSavedAt ? `Saved ${lastSavedAt}` : 'Saved locally'}</span>
+                </div>
                 {nextRoutine ? (
                   <div className="next-routine">
                     <span>{nextRoutine.time}</span>
@@ -685,19 +755,36 @@ function App() {
                   <button
                     className="secondary-button"
                     type="button"
-                    onClick={() => setActiveTab('routines')}
+                    onClick={focusQuickNote}
                   >
-                    <Clock3 aria-hidden="true" size={18} />
-                    Edit routines
+                    <Plus aria-hidden="true" size={18} />
+                    Add note
+                  </button>
+                  <button
+                    className="secondary-button"
+                    type="button"
+                    onClick={copyHandoffSummary}
+                  >
+                    <Copy aria-hidden="true" size={18} />
+                    Copy handoff
                   </button>
                 </div>
               </div>
-              <div
-                className="progress-ring"
-                style={progressStyle}
-                aria-label={`${progress}% complete`}
-              >
-                <span>{progress}%</span>
+              <div className="command-sidecar">
+                <div
+                  className="progress-ring"
+                  style={progressStyle}
+                  aria-label={`${progress}% complete`}
+                >
+                  <span>{progress}%</span>
+                </div>
+                {primaryContact && (
+                  <a className="primary-contact" href={`tel:${primaryContact.phone}`}>
+                    <PhoneCall aria-hidden="true" size={18} />
+                    <span>{primaryContact.name}</span>
+                    <strong>{primaryContact.phone}</strong>
+                  </a>
+                )}
               </div>
             </div>
 
@@ -708,16 +795,53 @@ function App() {
                 value={`${completedRoutines}/${routines.length}`}
               />
               <StatBlock
+                icon={Clock3}
+                label="Due now"
+                value={String(dueNowCount)}
+              />
+              <StatBlock
                 icon={CalendarDays}
                 label="Contacts"
                 value={String(contacts.length)}
               />
               <StatBlock
-                icon={Activity}
-                label="Log entries"
-                value={String(logEntries.length)}
+                icon={ShieldCheck}
+                label="Setup"
+                value={`${completedSetupSteps}/${setupSteps.length}`}
               />
             </div>
+
+            <section className="work-panel setup-panel">
+              <div className="panel-header">
+                <div>
+                  <p className="eyebrow">Care setup</p>
+                  <h2>{completedSetupSteps} of {setupSteps.length} ready</h2>
+                </div>
+              </div>
+              <div className="setup-list">
+                {setupSteps.map((step) => (
+                  <article
+                    className={step.complete ? 'setup-step done' : 'setup-step'}
+                    key={step.label}
+                  >
+                    <span className="setup-check" aria-hidden="true">
+                      {step.complete && <Check size={16} />}
+                    </span>
+                    <div>
+                      <h3>{step.label}</h3>
+                      <p>{step.detail}</p>
+                    </div>
+                    <button
+                      className="secondary-button compact-button"
+                      type="button"
+                      onClick={() => setActiveTab(step.tab)}
+                    >
+                      Edit
+                    </button>
+                  </article>
+                ))}
+              </div>
+            </section>
 
             <div className="dashboard-split">
               <section className="work-panel handoff-panel">
@@ -767,11 +891,25 @@ function App() {
                   </div>
                 </div>
                 <textarea
+                  ref={quickNoteRef}
                   aria-label="Quick care note"
                   value={quickLog}
                   onChange={(event) => setQuickLog(event.target.value)}
                   placeholder="One important observation from this shift."
                 />
+                <div className="mood-chips" aria-label="Quick note mood">
+                  {quickMoodOptions.map((mood) => (
+                    <button
+                      key={mood}
+                      className={quickMood === mood ? 'selected' : ''}
+                      type="button"
+                      aria-pressed={quickMood === mood}
+                      onClick={() => setQuickMood(mood)}
+                    >
+                      {mood}
+                    </button>
+                  ))}
+                </div>
                 <button className="primary-button" type="submit">
                   <Plus aria-hidden="true" size={18} />
                   Save note

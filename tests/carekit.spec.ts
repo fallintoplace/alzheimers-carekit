@@ -11,8 +11,10 @@ test('supports the core caregiver workflow', async ({ page }) => {
 
   await page.goto('/')
   await expect(page.getByRole('heading', { name: /Care dashboard/ })).toBeVisible()
+  await expect(page.getByText('4 of 4 ready')).toBeVisible()
   await page.getByRole('button', { name: 'Mark next done' }).click()
   await expect(page.getByText('1/4')).toBeVisible()
+  await page.getByRole('button', { name: 'Cheerful' }).click()
   await page
     .getByLabel('Quick care note')
     .fill('Calm afternoon after the garden walk.')
@@ -20,6 +22,7 @@ test('supports the core caregiver workflow', async ({ page }) => {
   await expect(
     page.getByText('Calm afternoon after the garden walk.'),
   ).toBeVisible()
+  await expect(page.getByText('Cheerful')).toBeVisible()
 
   await page.getByRole('button', { name: 'Routines', exact: true }).click()
   await page.getByLabel('Title').fill('Evening music')
