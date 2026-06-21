@@ -4,6 +4,8 @@ Alzheimer's CareKit is a local-first caregiver dashboard for routines, care note
 
 The app is designed for families and small care teams that need a simple place to keep person-centered details organized without creating an account or sending private care data to a server.
 
+![Alzheimer's CareKit dashboard preview](docs/preview.png)
+
 ## Features
 
 - Today dashboard with routine progress and the next care item
