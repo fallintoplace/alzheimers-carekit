@@ -1,21 +1,26 @@
 :root {
-  --bg: #f4f7f6;
-  --ink: #17211f;
-  --line: #d8e2df;
-  --muted: #5b6f69;
+  --bg: #f8fafd;
+  --ink: #1f1f1f;
+  --line: #dfe3eb;
+  --muted: #5f6368;
   --surface: #ffffff;
-  --surface-soft: #f8fbfa;
-  --brand: #0f766e;
-  --brand-dark: #0b5f59;
-  --accent: #c2410c;
-  --blue: #245a8d;
-  --warning: #b45309;
-  --danger: #b42318;
+  --surface-soft: #f1f4f9;
+  --surface-tint: #e8f0fe;
+  --brand: #0b57d0;
+  --brand-dark: #0842a0;
+  --accent: #188038;
+  --blue: #0b57d0;
+  --warning: #f9ab00;
+  --danger: #d93025;
+  --google-blue: #4285f4;
+  --google-red: #ea4335;
+  --google-yellow: #fbbc04;
+  --google-green: #34a853;
   color: var(--ink);
   background: var(--bg);
   font-family:
-    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
-    sans-serif;
+    "Google Sans", "Product Sans", Inter, ui-sans-serif, system-ui,
+    -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   font-size: 17px;
   font-synthesis: none;
   line-height: 1.5;
@@ -48,17 +53,20 @@ h3 {
 }
 
 h1 {
-  font-size: clamp(2rem, 4.4vw, 3.25rem);
-  line-height: 1.02;
+  font-size: clamp(2rem, 4.2vw, 3.1rem);
+  font-weight: 650;
+  line-height: 1.06;
 }
 
 h2 {
   font-size: clamp(1.32rem, 2.4vw, 1.9rem);
+  font-weight: 650;
   line-height: 1.12;
 }
 
 h3 {
   font-size: 1rem;
+  font-weight: 650;
   line-height: 1.25;
 }
 

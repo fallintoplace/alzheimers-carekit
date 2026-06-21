@@ -10,8 +10,9 @@
 }
 
 .app-sidebar {
-  background: #10231f;
-  color: #effaf7;
+  background: #ffffff;
+  border-right: 1px solid var(--line);
+  color: var(--ink);
   display: flex;
   flex-direction: column;
   gap: 22px;
@@ -30,12 +31,12 @@
 }
 
 .brand-lockup .eyebrow {
-  color: #a7c7c0;
+  color: var(--muted);
   margin-bottom: 2px;
 }
 
 .brand-lockup strong {
-  color: #ffffff;
+  color: var(--ink);
   display: block;
   font-size: 1.05rem;
   line-height: 1.2;
@@ -43,9 +44,16 @@
 
 .brand-mark {
   align-items: center;
-  background: #f7c948;
+  background:
+    radial-gradient(circle at center, #ffffff 0 44%, transparent 45%),
+    conic-gradient(
+      var(--google-blue, #4285f4) 0 25%,
+      var(--google-red) 0 50%,
+      var(--google-yellow) 0 75%,
+      var(--google-green) 0
+    );
   border-radius: 8px;
-  color: #10231f;
+  color: var(--brand);
   display: inline-flex;
   font-weight: 950;
   height: 42px;
@@ -58,7 +66,7 @@
 }
 
 .skip-link {
-  background: #0f766e;
+  background: var(--brand);
   border-radius: 6px;
   color: #ffffff;
   font-weight: 850;
@@ -77,7 +85,7 @@
 }
 
 .topbar {
-  background: rgba(255, 255, 255, 0.96);
+  background: rgba(255, 255, 255, 0.94);
   border-bottom: 1px solid var(--line);
   display: grid;
   align-items: center;
@@ -128,8 +136,8 @@
   align-items: center;
   background: transparent;
   border: 0;
-  border-radius: 6px;
-  color: #cfddda;
+  border-radius: 999px;
+  color: var(--muted);
   cursor: pointer;
   display: inline-flex;
   font: inherit;
@@ -143,20 +151,20 @@
 
 .tab[data-state='active'],
 .tab.active {
-  background: #f2fbf7;
-  color: #0b5f59;
+  background: var(--surface-tint);
+  color: var(--brand-dark);
 }
 
 .tab:hover,
 .tab:focus-visible {
-  background: rgba(255, 255, 255, 0.12);
-  color: #ffffff;
+  background: #f1f3f4;
+  color: var(--ink);
 }
 
 .tab[data-state='active']:hover,
 .tab[data-state='active']:focus-visible {
-  background: #ffffff;
-  color: #0b5f59;
+  background: #d3e3fd;
+  color: var(--brand-dark);
 }
 
 .tab-label-short {
@@ -171,9 +179,9 @@
 }
 
 .sidebar-card {
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  border-radius: 8px;
+  background: var(--surface-tint);
+  border: 1px solid #d3e3fd;
+  border-radius: 24px;
   display: grid;
   gap: 8px;
   margin-top: auto;
@@ -181,7 +189,7 @@
 }
 
 .sidebar-label {
-  color: #a7c7c0;
+  color: var(--brand-dark);
   font-size: 0.76rem;
   font-weight: 860;
   letter-spacing: 0.08em;
@@ -189,19 +197,19 @@
 }
 
 .sidebar-card strong {
-  color: #ffffff;
+  color: var(--brand-dark);
   font-size: 1.4rem;
   line-height: 1;
 }
 
 .sidebar-card p {
-  color: #d8e8e5;
+  color: #3c4043;
   margin: 0;
 }
 
 .sidebar-call {
   align-items: center;
-  color: #ffffff;
+  color: var(--brand-dark);
   display: inline-flex;
   font-weight: 850;
   gap: 8px;
@@ -228,8 +236,8 @@ main {
 .notice-panel {
   background: var(--surface);
   border: 1px solid var(--line);
-  border-radius: 8px;
-  box-shadow: 0 18px 45px rgba(23, 33, 31, 0.06);
+  border-radius: 28px;
+  box-shadow: 0 1px 2px rgba(60, 64, 67, 0.12), 0 1px 3px rgba(60, 64, 67, 0.1);
 }
 
 .intro-panel {
@@ -242,8 +250,13 @@ main {
 }
 
 .intro-panel::before {
-  background: var(--accent);
-  border-radius: 8px 0 0 8px;
+  background: linear-gradient(
+    180deg,
+    var(--brand) 0,
+    var(--google-green) 45%,
+    var(--google-yellow) 100%
+  );
+  border-radius: 28px 0 0 28px;
   content: '';
   inset: 0 auto 0 0;
   position: absolute;
@@ -258,8 +271,8 @@ main {
 }
 
 .status-badges span {
-  background: #eef6fb;
-  border: 1px solid #cfe0ed;
+  background: var(--surface-tint);
+  border: 1px solid #d3e3fd;
   border-radius: 999px;
   color: var(--blue);
   font-size: 0.82rem;
@@ -268,14 +281,14 @@ main {
 }
 
 .next-routine {
-  border-left: 5px solid var(--accent);
+  border-left: 5px solid var(--brand);
   margin-top: 18px;
   padding-left: 18px;
 }
 
 .next-routine span,
 .time-pill {
-  color: #8a350d;
+  color: var(--brand-dark);
   display: inline-block;
   font-size: 0.86rem;
   font-weight: 850;
@@ -312,7 +325,7 @@ main {
     conic-gradient(
       var(--brand) 0deg,
       var(--brand) var(--progress-degrees),
-      #e0e8e5 var(--progress-degrees)
+      #dfe3eb var(--progress-degrees)
     );
   border-radius: 999px;
   display: grid;
@@ -330,7 +343,7 @@ main {
 .primary-contact {
   background: #ffffff;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 24px;
   color: var(--brand-dark);
   display: grid;
   gap: 4px;
@@ -370,7 +383,7 @@ main {
   align-items: start;
   background: #ffffff;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 24px;
   color: var(--muted);
   display: grid;
   gap: 8px;
@@ -408,15 +421,15 @@ main {
 
 .notice-panel {
   align-items: flex-start;
-  background: #fff5e8;
-  color: #4c321d;
+  background: #fff8e1;
+  color: #3c4043;
   display: flex;
   gap: 14px;
   padding: 18px;
 }
 
 .notice-panel svg {
-  color: #bd5d22;
+  color: #b06000;
   flex: 0 0 auto;
 }
 
@@ -444,9 +457,9 @@ main {
 }
 
 .handoff-list div {
-  background: #ffffff;
+  background: var(--surface-soft);
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 20px;
   padding: 14px;
 }
 
@@ -478,7 +491,7 @@ main {
   align-items: center;
   background: #ffffff;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 24px;
   display: grid;
   gap: 12px;
   grid-template-columns: auto 1fr auto;
@@ -487,15 +500,15 @@ main {
 }
 
 .setup-step.done {
-  background: #eff8f4;
-  border-color: #b9ddd2;
+  background: #e6f4ea;
+  border-color: #ceead6;
 }
 
 .setup-check {
   align-items: center;
-  border: 2px solid var(--brand);
+  border: 2px solid var(--google-green);
   border-radius: 999px;
-  color: var(--brand);
+  color: var(--google-green);
   display: inline-flex;
   height: 28px;
   justify-content: center;
@@ -524,7 +537,7 @@ main {
 }
 
 .mood-chips button {
-  background: #ffffff;
+  background: var(--surface-soft);
   border: 1px solid var(--line);
   border-radius: 999px;
   color: var(--muted);
@@ -555,7 +568,7 @@ main {
   align-items: flex-start;
   background: #ffffff;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 24px;
   display: grid;
   gap: 14px;
   grid-template-columns: auto 1fr;
@@ -567,7 +580,8 @@ main {
 .log-card:hover,
 .safety-card:hover,
 .support-card:hover {
-  border-color: #bdd5cf;
+  border-color: #c9d7f2;
+  box-shadow: 0 1px 2px rgba(60, 64, 67, 0.12), 0 2px 8px rgba(60, 64, 67, 0.08);
 }
 
 .contact-card,
@@ -584,8 +598,8 @@ main {
 .routine-card.done,
 .safety-card.done,
 .support-card.used {
-  background: #eff8f4;
-  border-color: #b9ddd2;
+  background: #e6f4ea;
+  border-color: #ceead6;
 }
 
 .routine-card h3,
@@ -615,7 +629,7 @@ main {
 .support-list div {
   background: var(--surface-soft);
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 18px;
   padding: 10px;
 }
 
@@ -642,9 +656,9 @@ main {
 .check-button {
   align-items: center;
   background: #ffffff;
-  border: 2px solid var(--brand);
-  border-radius: 6px;
-  color: var(--brand);
+  border: 2px solid var(--google-green);
+  border-radius: 999px;
+  color: var(--google-green);
   cursor: pointer;
   display: inline-flex;
   height: 34px;
@@ -656,7 +670,7 @@ main {
 .primary-button,
 .secondary-button {
   align-items: center;
-  border-radius: 6px;
+  border-radius: 999px;
   cursor: pointer;
   display: inline-flex;
   font: inherit;
@@ -668,9 +682,9 @@ main {
 }
 
 .icon-button {
-  background: #ffffff;
-  border: 1px solid var(--line);
-  color: var(--ink);
+  background: var(--surface-soft);
+  border: 1px solid transparent;
+  color: var(--muted);
   min-width: 42px;
   padding: 0;
 }
@@ -691,9 +705,9 @@ main {
 }
 
 .secondary-button {
-  background: #ffffff;
-  border: 1px solid var(--line);
-  color: var(--ink);
+  background: var(--surface-tint);
+  border: 1px solid transparent;
+  color: var(--brand-dark);
   padding: 9px 14px;
 }
 
@@ -701,7 +715,7 @@ main {
   align-items: center;
   background: var(--danger);
   border: 1px solid var(--danger);
-  border-radius: 6px;
+  border-radius: 999px;
   color: #ffffff;
   cursor: pointer;
   display: inline-flex;
@@ -732,8 +746,8 @@ select:focus-visible {
 }
 
 .tooltip-content {
-  background: #10231f;
-  border-radius: 6px;
+  background: #3c4043;
+  border-radius: 8px;
   color: #ffffff;
   font-size: 0.82rem;
   font-weight: 820;
@@ -742,7 +756,7 @@ select:focus-visible {
 }
 
 .tooltip-arrow {
-  fill: #10231f;
+  fill: #3c4043;
 }
 
 .dialog-overlay {
@@ -755,8 +769,8 @@ select:focus-visible {
 .dialog-content {
   background: #ffffff;
   border: 1px solid var(--line);
-  border-radius: 8px;
-  box-shadow: 0 24px 80px rgba(23, 33, 31, 0.24);
+  border-radius: 28px;
+  box-shadow: 0 24px 80px rgba(60, 64, 67, 0.26);
   display: grid;
   gap: 14px;
   left: 50%;
@@ -807,8 +821,8 @@ select:focus-visible {
   background: #ffffff;
   border: 1px solid var(--line);
   border-left: 5px solid var(--brand);
-  border-radius: 8px;
-  box-shadow: 0 18px 55px rgba(23, 33, 31, 0.18);
+  border-radius: 24px;
+  box-shadow: 0 18px 55px rgba(60, 64, 67, 0.18);
   display: grid;
   gap: 3px;
   grid-template-columns: 1fr auto;
@@ -866,9 +880,10 @@ select:focus-visible {
 input,
 textarea,
 select {
-  background: #ffffff;
-  border: 1px solid #cbd9d5;
-  border-radius: 6px;
+  background: var(--surface-soft);
+  border: 1px solid transparent;
+  border-bottom-color: #c4c7c5;
+  border-radius: 16px 16px 4px 4px;
   color: var(--ink);
   font: inherit;
   min-height: 42px;
@@ -889,9 +904,9 @@ textarea {
 
 .search-field {
   align-items: center;
-  background: #ffffff;
-  border: 1px solid #cbd9d5;
-  border-radius: 6px;
+  background: var(--surface-soft);
+  border: 1px solid transparent;
+  border-radius: 999px;
   color: var(--brand-dark);
   display: grid;
   gap: 8px;
@@ -917,8 +932,8 @@ textarea {
 .segmented-control {
   align-items: center;
   background: var(--surface-soft);
-  border: 1px solid var(--line);
-  border-radius: 6px;
+  border: 1px solid transparent;
+  border-radius: 999px;
   display: inline-grid;
   gap: 1px;
   grid-template-columns: repeat(3, minmax(70px, 1fr));
@@ -934,6 +949,7 @@ textarea {
   font: inherit;
   font-weight: 850;
   min-height: 42px;
+  border-radius: 999px;
   padding: 0 12px;
   text-transform: capitalize;
 }
@@ -944,9 +960,9 @@ textarea {
 }
 
 .empty-state {
-  background: #ffffff;
+  background: var(--surface-soft);
   border: 1px dashed #b8c9c4;
-  border-radius: 8px;
+  border-radius: 24px;
   color: var(--muted);
   font-weight: 750;
   margin: 0;
@@ -967,8 +983,8 @@ textarea {
 }
 
 .log-meta span {
-  background: #eef6fb;
-  border: 1px solid #cfe0ed;
+  background: var(--surface-tint);
+  border: 1px solid #d3e3fd;
   border-radius: 999px;
   color: var(--blue);
   font-size: 0.82rem;
@@ -979,7 +995,7 @@ textarea {
 .print-card {
   background: #ffffff;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 28px;
   padding: clamp(22px, 4vw, 40px);
 }
 
@@ -1141,7 +1157,7 @@ textarea {
   align-items: center;
   background: var(--surface-soft);
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 20px;
   display: grid;
   gap: 4px;
   grid-template-columns: 1fr 1fr auto;
@@ -1259,10 +1275,10 @@ textarea {
   }
 
   .app-sidebar {
-    background: #10231f;
-    border-top: 1px solid rgba(255, 255, 255, 0.16);
+    background: rgba(255, 255, 255, 0.96);
+    border-top: 1px solid var(--line);
     bottom: 0;
-    box-shadow: 0 -18px 48px rgba(16, 35, 31, 0.26);
+    box-shadow: 0 -12px 36px rgba(60, 64, 67, 0.16);
     left: 0;
     padding: 8px 8px calc(8px + env(safe-area-inset-bottom));
     position: fixed;
@@ -1287,7 +1303,7 @@ textarea {
 
   .tab {
     align-items: center;
-    border-radius: 8px;
+    border-radius: 18px;
     flex-direction: column;
     font-size: 0.68rem;
     gap: 4px;
@@ -1296,6 +1312,17 @@ textarea {
     min-height: 56px;
     padding: 6px 2px;
     text-align: center;
+  }
+
+  .tab[data-state='active'] {
+    background: var(--surface-tint);
+    color: var(--brand-dark);
+  }
+
+  .tab:hover,
+  .tab:focus-visible {
+    background: #f1f3f4;
+    color: var(--ink);
   }
 
   .tab svg {
@@ -1353,7 +1380,7 @@ textarea {
   .intro-panel,
   .work-panel,
   .print-card {
-    box-shadow: 0 10px 28px rgba(23, 33, 31, 0.06);
+    box-shadow: 0 1px 2px rgba(60, 64, 67, 0.12), 0 1px 3px rgba(60, 64, 67, 0.1);
   }
 
   .intro-panel,
