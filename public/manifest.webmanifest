@@ -1,0 +1,16 @@
+{
+  "name": "Alzheimer's CareKit",
+  "short_name": "CareKit",
+  "description": "A local-first caregiver dashboard for routines, notes, contacts, and emergency cards.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f3f1e8",
+  "theme_color": "#0f766e",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "64x64",
+      "type": "image/svg+xml"
+    }
+  ]
+}
