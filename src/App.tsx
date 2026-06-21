@@ -4,6 +4,8 @@ import {
   CalendarDays,
   Check,
   ClipboardList,
+  Clock3,
+  Copy,
   Download,
   FileText,
   HeartHandshake,
@@ -12,6 +14,7 @@ import {
   Printer,
   RotateCcw,
   ShieldCheck,
+  Search,
   Upload,
   UserRound,
   X,
@@ -22,6 +25,7 @@ import type { LucideIcon } from 'lucide-react'
 import './App.css'
 
 type NavKey = 'today' | 'profile' | 'routines' | 'log' | 'emergency'
+type RoutineFilter = 'all' | 'open' | 'done'
 
 type CareProfile = {
   preferredName: string
@@ -269,6 +273,10 @@ function logEntriesToCsv(entries: LogEntry[]) {
   return [header.join(','), ...rows].join('\n')
 }
 
+function includesText(value: string, query: string) {
+  return value.toLowerCase().includes(query.trim().toLowerCase())
+}
+
 function StatBlock({
   label,
   value,
@@ -301,6 +309,12 @@ function App() {
   const [routineDraft, setRoutineDraft] = useState(emptyRoutine)
   const [contactDraft, setContactDraft] = useState(emptyContact)
   const [logDraft, setLogDraft] = useState(emptyLogEntry)
+  const [quickLog, setQuickLog] = useState('')
+  const [routineFilter, setRoutineFilter] = useState<RoutineFilter>('all')
+  const [routineQuery, setRoutineQuery] = useState('')
+  const [logQuery, setLogQuery] = useState('')
+  const [importMessage, setImportMessage] = useState('')
+  const [copyMessage, setCopyMessage] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const backup = useMemo(
@@ -309,7 +323,10 @@ function App() {
   )
 
   const completedRoutines = routines.filter((routine) => routine.done).length
-  const nextRoutine = routines.filter((routine) => !routine.done)[0]
+  const openRoutines = routines.filter((routine) => !routine.done)
+  const nextRoutine = openRoutines[0]
+  const upcomingRoutines = openRoutines.slice(0, 3)
+  const latestLog = logEntries[0]
   const todayLabel = new Intl.DateTimeFormat(undefined, {
     weekday: 'long',
     month: 'short',
@@ -322,6 +339,37 @@ function App() {
   const progressStyle = {
     '--progress-degrees': `${progress * 3.6}deg`,
   } as CSSProperties
+  const filteredRoutines = routines.filter((routine) => {
+    const matchesFilter =
+      routineFilter === 'all' ||
+      (routineFilter === 'open' && !routine.done) ||
+      (routineFilter === 'done' && routine.done)
+    const text = `${routine.title} ${routine.category} ${routine.notes}`
+
+    return matchesFilter && includesText(text, routineQuery)
+  })
+  const filteredLogEntries = logEntries.filter((entry) =>
+    includesText(
+      `${entry.date} ${entry.mood} ${entry.sleep} ${entry.appetite} ${entry.notes}`,
+      logQuery,
+    ),
+  )
+  const primaryContact = contacts[0]
+  const handoffSummary = [
+    `Care handoff for ${profile.preferredName || 'today'}`,
+    `Progress: ${completedRoutines}/${routines.length} routines complete`,
+    nextRoutine
+      ? `Next routine: ${nextRoutine.time} - ${nextRoutine.title}`
+      : 'Next routine: none open',
+    latestLog
+      ? `Latest log: ${latestLog.date}; mood ${latestLog.mood}; sleep ${latestLog.sleep}; appetite ${latestLog.appetite}; ${latestLog.notes}`
+      : 'Latest log: no entries yet',
+    `Comfort items: ${profile.comfortItems || 'not set'}`,
+    `Avoid: ${profile.avoid || 'not set'}`,
+    primaryContact
+      ? `Primary contact: ${primaryContact.name}, ${primaryContact.phone}`
+      : 'Primary contact: not set',
+  ].join('\n')
 
   useEffect(() => {
     saveBackup(backup)
@@ -401,6 +449,18 @@ function App() {
     )
   }
 
+  function markNextRoutineDone() {
+    if (!nextRoutine) {
+      return
+    }
+
+    setRoutines((current) =>
+      current.map((routine) =>
+        routine.id === nextRoutine.id ? { ...routine, done: true } : routine,
+      ),
+    )
+  }
+
   function addContact(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     if (!contactDraft.name.trim() || !contactDraft.phone.trim()) {
@@ -446,6 +506,26 @@ function App() {
     setLogDraft(emptyLogEntry)
   }
 
+  function addQuickLogEntry(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    if (!quickLog.trim()) {
+      return
+    }
+
+    setLogEntries((current) => [
+      {
+        id: createId('log'),
+        date: new Date().toISOString().slice(0, 10),
+        mood: 'Quick note',
+        sleep: 'Not recorded',
+        appetite: 'Not recorded',
+        notes: quickLog.trim(),
+      },
+      ...current,
+    ])
+    setQuickLog('')
+  }
+
   function removeLogEntry(id: string) {
     setLogEntries((current) => current.filter((entry) => entry.id !== id))
   }
@@ -468,20 +548,38 @@ function App() {
       return
     }
 
-    const imported = JSON.parse(await file.text()) as Backup
-    setProfile({ ...defaultProfile, ...imported.profile })
-    setRoutines(
-      (Array.isArray(imported.routines) ? imported.routines : []).sort(
-        byRoutineTime,
-      ),
-    )
-    setContacts(Array.isArray(imported.contacts) ? imported.contacts : [])
-    setLogEntries(
-      (Array.isArray(imported.logEntries) ? imported.logEntries : []).sort(
-        (a, b) => b.date.localeCompare(a.date),
-      ),
-    )
+    try {
+      const imported = JSON.parse(await file.text()) as Backup
+      setProfile({ ...defaultProfile, ...imported.profile })
+      setRoutines(
+        (Array.isArray(imported.routines) ? imported.routines : []).sort(
+          byRoutineTime,
+        ),
+      )
+      setContacts(Array.isArray(imported.contacts) ? imported.contacts : [])
+      setLogEntries(
+        (Array.isArray(imported.logEntries) ? imported.logEntries : []).sort(
+          (a, b) => b.date.localeCompare(a.date),
+        ),
+      )
+      setImportMessage('Backup imported')
+      setCopyMessage('')
+    } catch {
+      setImportMessage('Backup could not be imported')
+      setCopyMessage('')
+    }
     event.target.value = ''
+  }
+
+  async function copyHandoffSummary() {
+    try {
+      await navigator.clipboard.writeText(handoffSummary)
+      setCopyMessage('Handoff copied')
+      setImportMessage('')
+    } catch {
+      setCopyMessage('Copy unavailable')
+      setImportMessage('')
+    }
   }
 
   function printEmergencyCard() {
@@ -495,6 +593,9 @@ function App() {
         <div>
           <p className="eyebrow">Alzheimer's CareKit</p>
           <h1>Care dashboard for {profile.preferredName || 'today'}</h1>
+          {(importMessage || copyMessage) && (
+            <p className="status-line">{copyMessage || importMessage}</p>
+          )}
         </div>
         <div className="topbar-actions">
           <button
@@ -571,6 +672,25 @@ function App() {
                     <p>All planned items are marked done for now.</p>
                   </div>
                 )}
+                <div className="hero-actions">
+                  <button
+                    className="primary-button"
+                    type="button"
+                    onClick={markNextRoutineDone}
+                    disabled={!nextRoutine}
+                  >
+                    <Check aria-hidden="true" size={18} />
+                    Mark next done
+                  </button>
+                  <button
+                    className="secondary-button"
+                    type="button"
+                    onClick={() => setActiveTab('routines')}
+                  >
+                    <Clock3 aria-hidden="true" size={18} />
+                    Edit routines
+                  </button>
+                </div>
               </div>
               <div
                 className="progress-ring"
@@ -599,6 +719,66 @@ function App() {
               />
             </div>
 
+            <div className="dashboard-split">
+              <section className="work-panel handoff-panel">
+                <div className="panel-header">
+                  <div>
+                    <p className="eyebrow">Shift handoff</p>
+                    <h2>Brief</h2>
+                  </div>
+                  <button
+                    className="secondary-button"
+                    type="button"
+                    onClick={copyHandoffSummary}
+                  >
+                    <Copy aria-hidden="true" size={18} />
+                    Copy
+                  </button>
+                </div>
+                <dl className="handoff-list">
+                  <div>
+                    <dt>Next routine</dt>
+                    <dd>
+                      {nextRoutine
+                        ? `${nextRoutine.time} - ${nextRoutine.title}`
+                        : 'None open'}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>Latest note</dt>
+                    <dd>{latestLog ? latestLog.notes : 'No log entries yet'}</dd>
+                  </div>
+                  <div>
+                    <dt>Primary contact</dt>
+                    <dd>
+                      {contacts[0]
+                        ? `${contacts[0].name}, ${contacts[0].phone}`
+                        : 'Not set'}
+                    </dd>
+                  </div>
+                </dl>
+              </section>
+
+              <form className="work-panel quick-note-panel" onSubmit={addQuickLogEntry}>
+                <div className="panel-header">
+                  <div>
+                    <p className="eyebrow">Quick note</p>
+                    <h2>Add to care log</h2>
+                  </div>
+                </div>
+                <textarea
+                  aria-label="Quick care note"
+                  value={quickLog}
+                  onChange={(event) => setQuickLog(event.target.value)}
+                  placeholder="One important observation from this shift."
+                />
+                <button className="primary-button" type="submit">
+                  <Plus aria-hidden="true" size={18} />
+                  Save note
+                </button>
+              </form>
+            </div>
+
             <div className="work-panel">
               <div className="panel-header">
                 <div>
@@ -611,7 +791,7 @@ function App() {
                 </button>
               </div>
               <div className="item-list">
-                {routines.map((routine) => (
+                {upcomingRoutines.map((routine) => (
                   <article
                     className={routine.done ? 'routine-card done' : 'routine-card'}
                     key={routine.id}
@@ -633,6 +813,9 @@ function App() {
                     </div>
                   </article>
                 ))}
+                {upcomingRoutines.length === 0 && (
+                  <p className="empty-state">No open routines for now.</p>
+                )}
               </div>
             </div>
 
@@ -819,11 +1002,37 @@ function App() {
               <div className="panel-header">
                 <div>
                   <p className="eyebrow">Routine list</p>
-                  <h2>{routines.length} items</h2>
+                  <h2>
+                    {filteredRoutines.length} of {routines.length} items
+                  </h2>
+                </div>
+              </div>
+              <div className="filter-bar">
+                <label className="search-field">
+                  <Search aria-hidden="true" size={18} />
+                  <input
+                    aria-label="Search routines"
+                    value={routineQuery}
+                    onChange={(event) => setRoutineQuery(event.target.value)}
+                    placeholder="Search routines"
+                  />
+                </label>
+                <div className="segmented-control" aria-label="Routine filter">
+                  {(['all', 'open', 'done'] as RoutineFilter[]).map((filter) => (
+                    <button
+                      key={filter}
+                      className={routineFilter === filter ? 'selected' : ''}
+                      type="button"
+                      aria-pressed={routineFilter === filter}
+                      onClick={() => setRoutineFilter(filter)}
+                    >
+                      {filter}
+                    </button>
+                  ))}
                 </div>
               </div>
               <div className="item-list">
-                {routines.map((routine) => (
+                {filteredRoutines.map((routine) => (
                   <article className="routine-card compact" key={routine.id}>
                     <div>
                       <span className="time-pill">{routine.time}</span>
@@ -843,6 +1052,9 @@ function App() {
                     </button>
                   </article>
                 ))}
+                {filteredRoutines.length === 0 && (
+                  <p className="empty-state">No routines match this view.</p>
+                )}
               </div>
             </div>
           </section>
@@ -925,11 +1137,22 @@ function App() {
               <div className="panel-header">
                 <div>
                   <p className="eyebrow">History</p>
-                  <h2>{logEntries.length} entries</h2>
+                  <h2>
+                    {filteredLogEntries.length} of {logEntries.length} entries
+                  </h2>
                 </div>
               </div>
+              <label className="search-field full-width">
+                <Search aria-hidden="true" size={18} />
+                <input
+                  aria-label="Search care log"
+                  value={logQuery}
+                  onChange={(event) => setLogQuery(event.target.value)}
+                  placeholder="Search care log"
+                />
+              </label>
               <div className="item-list">
-                {logEntries.map((entry) => (
+                {filteredLogEntries.map((entry) => (
                   <article className="log-card" key={entry.id}>
                     <div>
                       <div className="log-meta">
@@ -950,6 +1173,9 @@ function App() {
                     </button>
                   </article>
                 ))}
+                {filteredLogEntries.length === 0 && (
+                  <p className="empty-state">No log entries match this search.</p>
+                )}
               </div>
             </div>
           </section>

@@ -9,10 +9,12 @@ The app is designed for families and small care teams that need a simple place t
 ## Features
 
 - Today dashboard with routine progress and the next care item
+- Shift handoff brief with one-click copy
+- Quick care notes from the dashboard
 - Person-centered care profile with comfort items, calming activities, and notes
-- Routine checklist with add, reset, complete, and remove actions
+- Routine checklist with add, reset, complete, remove, search, and filter actions
 - Care circle contacts with tap-to-call links
-- Daily care log with mood, sleep, appetite, notes, and CSV export
+- Daily care log with mood, sleep, appetite, notes, search, and CSV export
 - JSON backup import/export
 - Printable emergency card
 - Large touch targets, high contrast, and simple navigation

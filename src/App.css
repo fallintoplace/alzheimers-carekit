@@ -16,6 +16,12 @@
   max-width: 920px;
 }
 
+.status-line {
+  color: #0f5f59;
+  font-weight: 800;
+  margin: 12px 0 0;
+}
+
 .topbar-actions {
   display: flex;
   align-items: center;
@@ -121,6 +127,13 @@ main {
   margin-bottom: 8px;
 }
 
+.hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 20px;
+}
+
 .progress-ring {
   align-items: center;
   aspect-ratio: 1;
@@ -148,6 +161,13 @@ main {
   display: grid;
   gap: 14px;
   grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.dashboard-split {
+  align-items: stretch;
+  display: grid;
+  gap: 20px;
+  grid-template-columns: minmax(320px, 1.1fr) minmax(280px, 0.9fr);
 }
 
 .stat-block {
@@ -196,6 +216,42 @@ main {
 .notice-panel svg {
   color: #bd5d22;
   flex: 0 0 auto;
+}
+
+.handoff-panel,
+.quick-note-panel {
+  min-height: 100%;
+}
+
+.handoff-list {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+}
+
+.handoff-list div {
+  background: #ffffff;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 14px;
+}
+
+.handoff-list dt {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 850;
+  margin-bottom: 4px;
+  text-transform: uppercase;
+}
+
+.handoff-list dd {
+  color: var(--ink);
+  font-weight: 750;
+  margin: 0;
+}
+
+.quick-note-panel textarea {
+  min-height: 128px;
 }
 
 .item-list {
@@ -294,6 +350,11 @@ main {
   padding: 9px 14px;
 }
 
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
 button:hover {
   filter: brightness(0.97);
 }
@@ -336,6 +397,79 @@ select {
 textarea {
   min-height: 92px;
   resize: vertical;
+}
+
+.filter-bar {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: minmax(220px, 1fr) auto;
+  margin-bottom: 18px;
+}
+
+.search-field {
+  align-items: center;
+  background: #ffffff;
+  border: 1px solid #cfcac0;
+  border-radius: 6px;
+  color: #0f5f59;
+  display: grid;
+  gap: 8px;
+  grid-template-columns: auto 1fr;
+  min-height: 44px;
+  padding: 0 12px;
+}
+
+.search-field.full-width {
+  margin-bottom: 18px;
+}
+
+.search-field input {
+  border: 0;
+  min-height: 42px;
+  padding: 0;
+}
+
+.search-field input:focus-visible {
+  outline: 0;
+}
+
+.segmented-control {
+  align-items: center;
+  background: #f7f6ef;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  display: inline-grid;
+  gap: 1px;
+  grid-template-columns: repeat(3, minmax(70px, 1fr));
+  min-height: 44px;
+  overflow: hidden;
+}
+
+.segmented-control button {
+  background: transparent;
+  border: 0;
+  color: var(--muted);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 850;
+  min-height: 42px;
+  padding: 0 12px;
+  text-transform: capitalize;
+}
+
+.segmented-control button.selected {
+  background: #0f766e;
+  color: #ffffff;
+}
+
+.empty-state {
+  background: #ffffff;
+  border: 1px dashed #cfcac0;
+  border-radius: 8px;
+  color: var(--muted);
+  font-weight: 750;
+  margin: 0;
+  padding: 18px;
 }
 
 .contact-card a,
@@ -434,6 +568,8 @@ textarea {
   .two-column,
   .intro-panel,
   .stats-row,
+  .dashboard-split,
+  .filter-bar,
   .emergency-grid,
   .emergency-contacts div {
     grid-template-columns: 1fr;
