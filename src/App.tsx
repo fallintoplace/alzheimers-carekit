@@ -1,3 +1,7 @@
+import * as AlertDialog from '@radix-ui/react-alert-dialog'
+import * as Tabs from '@radix-ui/react-tabs'
+import * as Toast from '@radix-ui/react-toast'
+import * as Tooltip from '@radix-ui/react-tooltip'
 import {
   AlertTriangle,
   CalendarDays,
@@ -19,7 +23,7 @@ import {
   UserRound,
   X,
 } from 'lucide-react'
-import type { CSSProperties, ChangeEvent, FormEvent } from 'react'
+import type { CSSProperties, ChangeEvent, FormEvent, ReactNode } from 'react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { LucideIcon } from 'lucide-react'
 import './App.css'
@@ -27,6 +31,13 @@ import './App.css'
 type NavKey = 'today' | 'profile' | 'routines' | 'log' | 'emergency'
 type PrintTarget = 'none' | 'emergency' | 'shift'
 type RoutineFilter = 'all' | 'open' | 'done'
+type ToastTone = 'success' | 'info' | 'danger'
+
+type ToastState = {
+  title: string
+  description: string
+  tone: ToastTone
+}
 
 type CareProfile = {
   preferredName: string
@@ -320,6 +331,86 @@ function StatBlock({
   )
 }
 
+function TooltipIconButton({
+  label,
+  onClick,
+  children,
+}: {
+  label: string
+  onClick: () => void
+  children: ReactNode
+}) {
+  return (
+    <Tooltip.Root>
+      <Tooltip.Trigger asChild>
+        <button
+          className="icon-button"
+          type="button"
+          onClick={onClick}
+          aria-label={label}
+        >
+          {children}
+        </button>
+      </Tooltip.Trigger>
+      <Tooltip.Portal>
+        <Tooltip.Content className="tooltip-content" sideOffset={8}>
+          {label}
+          <Tooltip.Arrow className="tooltip-arrow" />
+        </Tooltip.Content>
+      </Tooltip.Portal>
+    </Tooltip.Root>
+  )
+}
+
+function ConfirmAction({
+  children,
+  title,
+  description,
+  confirmLabel,
+  tone = 'danger',
+  onConfirm,
+}: {
+  children: ReactNode
+  title: string
+  description: string
+  confirmLabel: string
+  tone?: 'danger' | 'neutral'
+  onConfirm: () => void
+}) {
+  return (
+    <AlertDialog.Root>
+      <AlertDialog.Trigger asChild>{children}</AlertDialog.Trigger>
+      <AlertDialog.Portal>
+        <AlertDialog.Overlay className="dialog-overlay" />
+        <AlertDialog.Content className="dialog-content">
+          <AlertDialog.Title className="dialog-title">
+            {title}
+          </AlertDialog.Title>
+          <AlertDialog.Description className="dialog-description">
+            {description}
+          </AlertDialog.Description>
+          <div className="dialog-actions">
+            <AlertDialog.Cancel asChild>
+              <button className="secondary-button" type="button">
+                Cancel
+              </button>
+            </AlertDialog.Cancel>
+            <AlertDialog.Action asChild>
+              <button
+                className={tone === 'danger' ? 'danger-button' : 'primary-button'}
+                type="button"
+                onClick={onConfirm}
+              >
+                {confirmLabel}
+              </button>
+            </AlertDialog.Action>
+          </div>
+        </AlertDialog.Content>
+      </AlertDialog.Portal>
+    </AlertDialog.Root>
+  )
+}
+
 function App() {
   const initialData = useMemo(() => loadBackup(), [])
   const [activeTab, setActiveTab] = useState<NavKey>('today')
@@ -339,9 +430,13 @@ function App() {
   const [routineFilter, setRoutineFilter] = useState<RoutineFilter>('all')
   const [routineQuery, setRoutineQuery] = useState('')
   const [logQuery, setLogQuery] = useState('')
-  const [importMessage, setImportMessage] = useState('')
-  const [copyMessage, setCopyMessage] = useState('')
   const [printTarget, setPrintTarget] = useState<PrintTarget>('none')
+  const [toastOpen, setToastOpen] = useState(false)
+  const [toastData, setToastData] = useState<ToastState>({
+    title: 'Ready',
+    description: '',
+    tone: 'info',
+  })
   const fileInputRef = useRef<HTMLInputElement>(null)
   const quickNoteRef = useRef<HTMLTextAreaElement>(null)
 
@@ -390,7 +485,6 @@ function App() {
     ),
   )
   const primaryContact = contacts[0]
-  const statusMessage = copyMessage || importMessage
   const setupSteps = [
     {
       label: 'Profile basics',
@@ -448,6 +542,18 @@ function App() {
     saveBackup(backup)
   }, [backup])
 
+  function showToast(
+    title: string,
+    description: string,
+    tone: ToastTone = 'info',
+  ) {
+    setToastOpen(false)
+    window.setTimeout(() => {
+      setToastData({ title, description, tone })
+      setToastOpen(true)
+    }, 20)
+  }
+
   function updateProfile(
     event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
   ) {
@@ -484,7 +590,8 @@ function App() {
 
   function addRoutine(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    if (!routineDraft.title.trim()) {
+    const title = routineDraft.title.trim()
+    if (!title) {
       return
     }
 
@@ -493,7 +600,7 @@ function App() {
         ...current,
         {
           id: createId('routine'),
-          title: routineDraft.title.trim(),
+          title,
           time: routineDraft.time,
           category: routineDraft.category.trim() || 'Care',
           notes: routineDraft.notes.trim(),
@@ -502,6 +609,7 @@ function App() {
       ].sort(byRoutineTime),
     )
     setRoutineDraft(emptyRoutine)
+    showToast('Routine added', `${title} is now on the checklist.`, 'success')
   }
 
   function toggleRoutine(id: string) {
@@ -513,13 +621,20 @@ function App() {
   }
 
   function removeRoutine(id: string) {
+    const removed = routines.find((routine) => routine.id === id)
     setRoutines((current) => current.filter((routine) => routine.id !== id))
+    showToast(
+      'Routine removed',
+      `${removed?.title ?? 'Routine'} was removed from the checklist.`,
+      'danger',
+    )
   }
 
   function resetRoutines() {
     setRoutines((current) =>
       current.map((routine) => ({ ...routine, done: false })),
     )
+    showToast('Checklist reset', 'All routine items are open again.', 'info')
   }
 
   function markNextRoutineDone() {
@@ -532,11 +647,14 @@ function App() {
         routine.id === nextRoutine.id ? { ...routine, done: true } : routine,
       ),
     )
+    showToast('Routine completed', `${nextRoutine.title} marked done.`, 'success')
   }
 
   function addContact(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    if (!contactDraft.name.trim() || !contactDraft.phone.trim()) {
+    const name = contactDraft.name.trim()
+    const phone = contactDraft.phone.trim()
+    if (!name || !phone) {
       return
     }
 
@@ -544,17 +662,24 @@ function App() {
       ...current,
       {
         id: createId('contact'),
-        name: contactDraft.name.trim(),
+        name,
         relation: contactDraft.relation.trim(),
-        phone: contactDraft.phone.trim(),
+        phone,
         notes: contactDraft.notes.trim(),
       },
     ])
     setContactDraft(emptyContact)
+    showToast('Contact added', `${name} is in the care circle.`, 'success')
   }
 
   function removeContact(id: string) {
+    const removed = contacts.find((contact) => contact.id === id)
     setContacts((current) => current.filter((contact) => contact.id !== id))
+    showToast(
+      'Contact removed',
+      `${removed?.name ?? 'Contact'} was removed from the care circle.`,
+      'danger',
+    )
   }
 
   function addLogEntry(event: FormEvent<HTMLFormElement>) {
@@ -577,6 +702,7 @@ function App() {
       ].sort((a, b) => b.date.localeCompare(a.date)),
     )
     setLogDraft(emptyLogEntry)
+    showToast('Care note added', 'The observation was saved to history.', 'success')
   }
 
   function addQuickLogEntry(event: FormEvent<HTMLFormElement>) {
@@ -597,6 +723,7 @@ function App() {
       ...current,
     ])
     setQuickLog('')
+    showToast('Quick note saved', `${quickMood} note added to history.`, 'success')
   }
 
   function focusQuickNote() {
@@ -605,6 +732,7 @@ function App() {
 
   function removeLogEntry(id: string) {
     setLogEntries((current) => current.filter((entry) => entry.id !== id))
+    showToast('Log entry removed', 'The note was removed from history.', 'danger')
   }
 
   function exportBackup() {
@@ -613,10 +741,12 @@ function App() {
       JSON.stringify(backup, null, 2),
       'application/json',
     )
+    showToast('Backup downloaded', 'A local JSON backup was created.', 'success')
   }
 
   function exportCareLog() {
     downloadFile('alzheimers-care-log.csv', logEntriesToCsv(logEntries), 'text/csv')
+    showToast('CSV exported', 'The care log was downloaded as a CSV.', 'success')
   }
 
   async function importBackup(event: ChangeEvent<HTMLInputElement>) {
@@ -639,11 +769,13 @@ function App() {
           (a, b) => b.date.localeCompare(a.date),
         ),
       )
-      setImportMessage('Backup imported')
-      setCopyMessage('')
+      showToast('Backup imported', 'The local care workspace was updated.', 'success')
     } catch {
-      setImportMessage('Backup could not be imported')
-      setCopyMessage('')
+      showToast(
+        'Import failed',
+        'That file could not be used as a backup.',
+        'danger',
+      )
     }
     event.target.value = ''
   }
@@ -651,11 +783,9 @@ function App() {
   async function copyHandoffSummary() {
     try {
       await navigator.clipboard.writeText(handoffSummary)
-      setCopyMessage('Handoff copied')
-      setImportMessage('')
+      showToast('Handoff copied', 'The shift brief is ready to paste.', 'success')
     } catch {
-      setCopyMessage('Copy unavailable')
-      setImportMessage('')
+      showToast('Copy unavailable', 'Clipboard access was blocked.', 'danger')
     }
   }
 
@@ -677,86 +807,105 @@ function App() {
   }
 
   return (
-    <div className={`app-shell print-${printTarget}`}>
-      <a className="skip-link" href="#main-content">
-        Skip to main content
-      </a>
-      <header className="topbar">
-        <div>
-          <p className="eyebrow">Alzheimer's CareKit</p>
-          <h1>Care dashboard for {profile.preferredName || 'today'}</h1>
-          {statusMessage && (
-            <p className="status-line" role="status" aria-live="polite">
-              {statusMessage}
-            </p>
-          )}
-        </div>
-        <div className="topbar-actions">
-          <button
-            className="icon-button"
-            type="button"
-            onClick={printShiftPacket}
-            title="Print shift packet"
-            aria-label="Print shift packet"
-          >
-            <FileText aria-hidden="true" size={20} />
-          </button>
-          <button
-            className="icon-button"
-            type="button"
-            onClick={exportBackup}
-            title="Download backup"
-            aria-label="Download backup"
-          >
-            <Download aria-hidden="true" size={20} />
-          </button>
-          <button
-            className="icon-button"
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            title="Import backup"
-            aria-label="Import backup"
-          >
-            <Upload aria-hidden="true" size={20} />
-          </button>
-          <button
-            className="icon-button"
-            type="button"
-            onClick={printEmergencyCard}
-            title="Print emergency card"
-            aria-label="Print emergency card"
-          >
-            <Printer aria-hidden="true" size={20} />
-          </button>
-          <input
-            ref={fileInputRef}
-            className="hidden-input"
-            type="file"
-            accept="application/json"
-            onChange={importBackup}
-          />
-        </div>
-      </header>
+    <Tooltip.Provider delayDuration={250}>
+      <Toast.Provider swipeDirection="right">
+        <Tabs.Root
+          className={`app-shell print-${printTarget}`}
+          value={activeTab}
+          onValueChange={(value) => setActiveTab(value as NavKey)}
+        >
+          <a className="skip-link" href="#main-content">
+            Skip to main content
+          </a>
+          <div className="app-frame">
+            <aside className="app-sidebar" aria-label="Care workspace">
+              <div className="brand-lockup">
+                <span className="brand-mark" aria-hidden="true">
+                  A
+                </span>
+                <div>
+                  <p className="eyebrow">Alzheimer's CareKit</p>
+                  <strong>Local care workspace</strong>
+                </div>
+              </div>
 
-      <nav className="tabs" aria-label="CareKit sections">
-        {navItems.map((item) => {
-          const Icon = item.icon
-          return (
-            <button
-              key={item.key}
-              className={item.key === activeTab ? 'tab active' : 'tab'}
-              type="button"
-              aria-current={item.key === activeTab ? 'page' : undefined}
-              onClick={() => setActiveTab(item.key)}
-            >
-              <Icon aria-hidden="true" size={18} />
-              <span>{item.label}</span>
-            </button>
-          )
-        })}
-      </nav>
+              <Tabs.List className="tabs sidebar-nav" aria-label="CareKit sections">
+                {navItems.map((item) => {
+                  const Icon = item.icon
+                  return (
+                    <Tabs.Trigger
+                      key={item.key}
+                      className="tab"
+                      value={item.key}
+                      aria-label={item.label}
+                    >
+                      <Icon aria-hidden="true" size={18} />
+                      <span>{item.label}</span>
+                    </Tabs.Trigger>
+                  )
+                })}
+              </Tabs.List>
 
-      <main id="main-content" tabIndex={-1}>
+              <div className="sidebar-card">
+                <span className="sidebar-label">Shift snapshot</span>
+                <strong>{progress}% complete</strong>
+                <p>
+                  {nextRoutine
+                    ? `${nextRoutine.time} - ${nextRoutine.title}`
+                    : 'No open routines right now'}
+                </p>
+                {primaryContact && (
+                  <a className="sidebar-call" href={`tel:${primaryContact.phone}`}>
+                    <PhoneCall aria-hidden="true" size={16} />
+                    {primaryContact.name}
+                  </a>
+                )}
+              </div>
+            </aside>
+
+            <div className="content-shell">
+              <header className="topbar">
+                <div>
+                  <p className="eyebrow">{todayLabel}</p>
+                  <h1>Care command center for {profile.preferredName || 'today'}</h1>
+                  <p className="topbar-copy">
+                    Saved locally at {lastSavedAt}. {openRoutines.length} open
+                    routines, {contacts.length} contacts, {logEntries.length} notes.
+                  </p>
+                </div>
+                <div className="topbar-actions">
+                  <TooltipIconButton
+                    label="Print shift packet"
+                    onClick={printShiftPacket}
+                  >
+                    <FileText aria-hidden="true" size={20} />
+                  </TooltipIconButton>
+                  <TooltipIconButton label="Download backup" onClick={exportBackup}>
+                    <Download aria-hidden="true" size={20} />
+                  </TooltipIconButton>
+                  <TooltipIconButton
+                    label="Import backup"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    <Upload aria-hidden="true" size={20} />
+                  </TooltipIconButton>
+                  <TooltipIconButton
+                    label="Print emergency card"
+                    onClick={printEmergencyCard}
+                  >
+                    <Printer aria-hidden="true" size={20} />
+                  </TooltipIconButton>
+                  <input
+                    ref={fileInputRef}
+                    className="hidden-input"
+                    type="file"
+                    accept="application/json"
+                    onChange={importBackup}
+                  />
+                </div>
+              </header>
+
+              <main id="main-content" tabIndex={-1}>
         {activeTab === 'today' && (
           <section className="section-grid">
             <div className="intro-panel">
@@ -972,10 +1121,18 @@ function App() {
                   <p className="eyebrow">Today's routine</p>
                   <h2>Checklist</h2>
                 </div>
-                <button className="secondary-button" type="button" onClick={resetRoutines}>
-                  <RotateCcw aria-hidden="true" size={18} />
-                  Reset
-                </button>
+                <ConfirmAction
+                  title="Reset today's checklist?"
+                  description="This reopens every routine item for the current care day."
+                  confirmLabel="Reset checklist"
+                  tone="neutral"
+                  onConfirm={resetRoutines}
+                >
+                  <button className="secondary-button" type="button">
+                    <RotateCcw aria-hidden="true" size={18} />
+                    Reset
+                  </button>
+                </ConfirmAction>
               </div>
               <div className="item-list">
                 {upcomingRoutines.map((routine) => (
@@ -1124,14 +1281,20 @@ function App() {
                       <a href={`tel:${contact.phone}`}>{contact.phone}</a>
                       {contact.notes && <p>{contact.notes}</p>}
                     </div>
-                    <button
-                      className="icon-button quiet"
-                      type="button"
-                      onClick={() => removeContact(contact.id)}
-                      aria-label={`Remove ${contact.name}`}
+                    <ConfirmAction
+                      title={`Remove ${contact.name}?`}
+                      description="This removes the contact from the care circle on this device."
+                      confirmLabel="Remove contact"
+                      onConfirm={() => removeContact(contact.id)}
                     >
-                      <X aria-hidden="true" size={18} />
-                    </button>
+                      <button
+                        className="icon-button quiet danger-icon"
+                        type="button"
+                        aria-label={`Remove ${contact.name}`}
+                      >
+                        <X aria-hidden="true" size={18} />
+                      </button>
+                    </ConfirmAction>
                   </article>
                 ))}
               </div>
@@ -1233,14 +1396,20 @@ function App() {
                         {routine.notes ? ` - ${routine.notes}` : ''}
                       </p>
                     </div>
-                    <button
-                      className="icon-button quiet"
-                      type="button"
-                      onClick={() => removeRoutine(routine.id)}
-                      aria-label={`Remove ${routine.title}`}
+                    <ConfirmAction
+                      title={`Remove ${routine.title}?`}
+                      description="This removes the routine from the shared checklist on this device."
+                      confirmLabel="Remove routine"
+                      onConfirm={() => removeRoutine(routine.id)}
                     >
-                      <X aria-hidden="true" size={18} />
-                    </button>
+                      <button
+                        className="icon-button quiet danger-icon"
+                        type="button"
+                        aria-label={`Remove ${routine.title}`}
+                      >
+                        <X aria-hidden="true" size={18} />
+                      </button>
+                    </ConfirmAction>
                   </article>
                 ))}
                 {filteredRoutines.length === 0 && (
@@ -1354,14 +1523,20 @@ function App() {
                       </div>
                       <p>{entry.notes}</p>
                     </div>
-                    <button
-                      className="icon-button quiet"
-                      type="button"
-                      onClick={() => removeLogEntry(entry.id)}
-                      aria-label={`Remove log entry from ${entry.date}`}
+                    <ConfirmAction
+                      title={`Remove log entry from ${entry.date}?`}
+                      description="This removes the care note from this device."
+                      confirmLabel="Remove note"
+                      onConfirm={() => removeLogEntry(entry.id)}
                     >
-                      <X aria-hidden="true" size={18} />
-                    </button>
+                      <button
+                        className="icon-button quiet danger-icon"
+                        type="button"
+                        aria-label={`Remove log entry from ${entry.date}`}
+                      >
+                        <X aria-hidden="true" size={18} />
+                      </button>
+                    </ConfirmAction>
                   </article>
                 ))}
                 {filteredLogEntries.length === 0 && (
@@ -1421,7 +1596,9 @@ function App() {
             </div>
           </section>
         )}
-      </main>
+              </main>
+            </div>
+          </div>
       <section className="print-only shift-packet" aria-hidden={printTarget !== 'shift'}>
         <header className="shift-print-header">
           <div>
@@ -1574,7 +1751,25 @@ function App() {
           guidance, or treatment recommendation.
         </p>
       </section>
-    </div>
+        </Tabs.Root>
+        <Toast.Root
+          className={`toast-root ${toastData.tone}`}
+          open={toastOpen}
+          onOpenChange={setToastOpen}
+        >
+          <Toast.Title className="toast-title">{toastData.title}</Toast.Title>
+          {toastData.description && (
+            <Toast.Description className="toast-description">
+              {toastData.description}
+            </Toast.Description>
+          )}
+          <Toast.Close className="toast-close" aria-label="Close notification">
+            <X aria-hidden="true" size={16} />
+          </Toast.Close>
+        </Toast.Root>
+        <Toast.Viewport className="toast-viewport" />
+      </Toast.Provider>
+    </Tooltip.Provider>
   )
 }
 

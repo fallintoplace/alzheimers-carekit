@@ -9,9 +9,11 @@ The app is designed for families and small care teams that need a simple place t
 ## Features
 
 - Today dashboard with routine progress and the next care item
+- Desktop sidebar and compact mobile navigation powered by accessible primitives
 - Care setup checklist for profile, comfort plan, contacts, and routines
 - Shift handoff brief with one-click copy
 - Printable shift packet with routines, recent notes, contacts, and care profile
+- Toast feedback and confirmation dialogs for important actions
 - Mood-tagged quick care notes from the dashboard
 - Person-centered care profile with comfort items, calming activities, and notes
 - Routine checklist with add, reset, complete, remove, search, and filter actions

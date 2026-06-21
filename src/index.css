@@ -1,9 +1,16 @@
 :root {
-  --bg: #f3f1e8;
-  --ink: #171614;
-  --line: #ddd8cc;
-  --muted: #5f655f;
-  --surface: #fffdf7;
+  --bg: #f4f7f6;
+  --ink: #17211f;
+  --line: #d8e2df;
+  --muted: #5b6f69;
+  --surface: #ffffff;
+  --surface-soft: #f8fbfa;
+  --brand: #0f766e;
+  --brand-dark: #0b5f59;
+  --accent: #c2410c;
+  --blue: #245a8d;
+  --warning: #b45309;
+  --danger: #b42318;
   color: var(--ink);
   background: var(--bg);
   font-family:
@@ -41,12 +48,12 @@ h3 {
 }
 
 h1 {
-  font-size: clamp(2rem, 5vw, 3.8rem);
-  line-height: 1;
+  font-size: clamp(2rem, 4.4vw, 3.25rem);
+  line-height: 1.02;
 }
 
 h2 {
-  font-size: clamp(1.4rem, 2.6vw, 2rem);
+  font-size: clamp(1.32rem, 2.4vw, 1.9rem);
   line-height: 1.12;
 }
 
